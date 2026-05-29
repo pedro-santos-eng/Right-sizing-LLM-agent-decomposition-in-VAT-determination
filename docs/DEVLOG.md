@@ -1,5 +1,24 @@
 # Development Log
 
+## 2026-05-29 — Part 1 complete: dataset frozen @ seed 42
+
+Part 1 readiness gate (§9) is met and the dataset is frozen to disk. Finalized
+as four commits (Option A, hash-verified between steps):
+
+1. `oracle: Part 1 — …` — oracle code, consolidated schema, tests, freeze script.
+2. `gitignore: un-ignore data/ …` — **the pinned `oracle_commit`**:
+   `e2d2bdd22b85ea2915e3d719d7c12c6f18eac577`.
+3. `data: freeze 40+8 cases @ seed 42` — frozen dataset (MANIFEST + 48 case files).
+4. `docs: DEVLOG — close Part 1` — this entry.
+
+Frozen artifact (`data/MANIFEST.json`, seed 42):
+- `oracle_commit`: `e2d2bdd22b85ea2915e3d719d7c12c6f18eac577` (`oracle_commit_dirty: false`)
+- `dataset_sha256`: `3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e`
+- `case_files_sha256`: `3472544ffcd1434d59427c912ba5c77a8294de0fb675ba7d32f1572c5e410302`
+
+Verification: `python -m scripts.freeze_dataset --verify` → **VERIFY OK**;
+`pytest -q` → **27 passed**. Families 10/10/10/10 (eval), 2/2/2/2 (dev).
+
 ## 2026-05-29 — Cleanup: drop eval_001 anchor + consolidate schemas
 
 Applied two pure refactors (supplied as patch files, now removed from the root).
