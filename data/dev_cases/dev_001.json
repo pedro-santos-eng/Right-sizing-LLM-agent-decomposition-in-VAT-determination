@@ -1,0 +1,111 @@
+{
+  "case_id": "dev_001",
+  "input": {
+    "case_id": "dev_001",
+    "customer_country": "DE",
+    "customer_vat_registered": false,
+    "line_items": [
+      {
+        "amount": 6989.0,
+        "description": "synthetic-GEN_SERVICE",
+        "line_id": "L1",
+        "true_category": "GEN_SERVICE"
+      }
+    ],
+    "supplier_country": "DE",
+    "transaction_type": "B2C"
+  },
+  "oracle_trace": {
+    "case_id": "dev_001",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "DE",
+      "lines": [
+        {
+          "category": "GEN_SERVICE",
+          "exempt": false,
+          "liable_party": "supplier",
+          "line_id": "L1",
+          "non_charging_reason": null,
+          "outcome": "standard_charge",
+          "rate": 0.19,
+          "rate_band": "standard",
+          "reverse_charge": false,
+          "vat_amount": 1327.91
+        }
+      ],
+      "total_vat_amount": 1327.91
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_SERVICE",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "DE",
+        "transaction_type": "B2C"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_SERVICE"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-GEN_SERVICE",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_SERVICE"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.19,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "category": "GEN_SERVICE",
+            "jurisdiction": "DE"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 1327.91
+          },
+          "rule_reference": "RC.DOMESTIC.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "category": "GEN_SERVICE",
+            "is_exempt": false,
+            "jur_path": "domestic",
+            "line_amount": 6989.0,
+            "rate": 0.19
+          }
+        }
+      }
+    ]
+  }
+}

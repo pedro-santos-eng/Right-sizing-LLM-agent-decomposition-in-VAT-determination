@@ -1,0 +1,111 @@
+{
+  "case_id": "eval_028",
+  "input": {
+    "case_id": "eval_028",
+    "customer_country": "FR",
+    "customer_vat_registered": false,
+    "line_items": [
+      {
+        "amount": 2316.0,
+        "description": "synthetic-RED_GOODS",
+        "line_id": "L1",
+        "true_category": "RED_GOODS"
+      }
+    ],
+    "supplier_country": "ES",
+    "transaction_type": "B2C"
+  },
+  "oracle_trace": {
+    "case_id": "eval_028",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "ES",
+      "lines": [
+        {
+          "category": "RED_GOODS",
+          "exempt": false,
+          "liable_party": "supplier",
+          "line_id": "L1",
+          "non_charging_reason": null,
+          "outcome": "standard_charge",
+          "rate": 0.1,
+          "rate_band": "reduced",
+          "reverse_charge": false,
+          "vat_amount": 231.6
+        }
+      ],
+      "total_vat_amount": 231.6
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "b2c_cross_border",
+        "jurisdiction": "ES"
+      },
+      "rule_reference": "JUR.B2C_CROSS_BORDER",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_GOODS",
+        "customer_country": "FR",
+        "customer_vat_registered": false,
+        "supplier_country": "ES",
+        "transaction_type": "B2C"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "RED_GOODS"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-RED_GOODS",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "RED_GOODS"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.1,
+            "rate_band": "reduced"
+          },
+          "rule_reference": "RATE.REDUCED",
+          "subtask": "RAT",
+          "support": {
+            "category": "RED_GOODS",
+            "jurisdiction": "ES"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 231.6
+          },
+          "rule_reference": "RC.B2C.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "category": "RED_GOODS",
+            "is_exempt": false,
+            "jur_path": "b2c_cross_border",
+            "line_amount": 2316.0,
+            "rate": 0.1
+          }
+        }
+      }
+    ]
+  }
+}

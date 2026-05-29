@@ -1,0 +1,183 @@
+{
+  "case_id": "dev_007",
+  "input": {
+    "case_id": "dev_007",
+    "customer_country": "FR",
+    "customer_vat_registered": true,
+    "line_items": [
+      {
+        "amount": 2774.0,
+        "description": "synthetic-GEN_GOODS",
+        "line_id": "L1",
+        "true_category": "GEN_GOODS"
+      },
+      {
+        "amount": 6708.0,
+        "description": "synthetic-RED_GOODS",
+        "line_id": "L2",
+        "true_category": "RED_GOODS"
+      }
+    ],
+    "supplier_country": "DE",
+    "transaction_type": "B2B"
+  },
+  "oracle_trace": {
+    "case_id": "dev_007",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "FR",
+      "lines": [
+        {
+          "category": "GEN_GOODS",
+          "exempt": false,
+          "liable_party": "customer",
+          "line_id": "L1",
+          "non_charging_reason": "reverse_charge",
+          "outcome": "reverse_charge",
+          "rate": 0.2,
+          "rate_band": "standard",
+          "reverse_charge": true,
+          "vat_amount": 0.0
+        },
+        {
+          "category": "RED_GOODS",
+          "exempt": false,
+          "liable_party": "customer",
+          "line_id": "L2",
+          "non_charging_reason": "reverse_charge",
+          "outcome": "reverse_charge",
+          "rate": 0.055,
+          "rate_band": "reduced",
+          "reverse_charge": true,
+          "vat_amount": 0.0
+        }
+      ],
+      "total_vat_amount": 0.0
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_GOODS",
+        "customer_country": "FR",
+        "customer_vat_registered": true,
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_GOODS"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-GEN_GOODS",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_GOODS"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.2,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "category": "GEN_GOODS",
+            "jurisdiction": "FR"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "customer",
+            "non_charging_reason": "reverse_charge",
+            "outcome": "reverse_charge",
+            "reverse_charge": true,
+            "vat_amount": 0.0
+          },
+          "rule_reference": "RC.B2B.INTRA_EU",
+          "subtask": "RCH",
+          "support": {
+            "category": "GEN_GOODS",
+            "is_exempt": false,
+            "jur_path": "intra_community_b2b",
+            "line_amount": 2774.0,
+            "rate": 0.2
+          }
+        }
+      },
+      {
+        "cls": {
+          "decision": {
+            "category": "RED_GOODS"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-RED_GOODS",
+            "line_id": "L2"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "RED_GOODS"
+          }
+        },
+        "line_id": "L2",
+        "rat": {
+          "decision": {
+            "rate": 0.055,
+            "rate_band": "reduced"
+          },
+          "rule_reference": "RATE.REDUCED",
+          "subtask": "RAT",
+          "support": {
+            "category": "RED_GOODS",
+            "jurisdiction": "FR"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "customer",
+            "non_charging_reason": "reverse_charge",
+            "outcome": "reverse_charge",
+            "reverse_charge": true,
+            "vat_amount": 0.0
+          },
+          "rule_reference": "RC.B2B.INTRA_EU",
+          "subtask": "RCH",
+          "support": {
+            "category": "RED_GOODS",
+            "is_exempt": false,
+            "jur_path": "intra_community_b2b",
+            "line_amount": 6708.0,
+            "rate": 0.055
+          }
+        }
+      }
+    ]
+  }
+}

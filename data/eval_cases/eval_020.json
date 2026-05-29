@@ -1,0 +1,111 @@
+{
+  "case_id": "eval_020",
+  "input": {
+    "case_id": "eval_020",
+    "customer_country": "FR",
+    "customer_vat_registered": true,
+    "line_items": [
+      {
+        "amount": 9175.0,
+        "description": "synthetic-GEN_SERVICE",
+        "line_id": "L1",
+        "true_category": "GEN_SERVICE"
+      }
+    ],
+    "supplier_country": "ES",
+    "transaction_type": "B2B"
+  },
+  "oracle_trace": {
+    "case_id": "eval_020",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "FR",
+      "lines": [
+        {
+          "category": "GEN_SERVICE",
+          "exempt": false,
+          "liable_party": "customer",
+          "line_id": "L1",
+          "non_charging_reason": "reverse_charge",
+          "outcome": "reverse_charge",
+          "rate": 0.2,
+          "rate_band": "standard",
+          "reverse_charge": true,
+          "vat_amount": 0.0
+        }
+      ],
+      "total_vat_amount": 0.0
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_SERVICE",
+        "customer_country": "FR",
+        "customer_vat_registered": true,
+        "supplier_country": "ES",
+        "transaction_type": "B2B"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_SERVICE"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-GEN_SERVICE",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_SERVICE"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.2,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "category": "GEN_SERVICE",
+            "jurisdiction": "FR"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "customer",
+            "non_charging_reason": "reverse_charge",
+            "outcome": "reverse_charge",
+            "reverse_charge": true,
+            "vat_amount": 0.0
+          },
+          "rule_reference": "RC.B2B.INTRA_EU",
+          "subtask": "RCH",
+          "support": {
+            "category": "GEN_SERVICE",
+            "is_exempt": false,
+            "jur_path": "intra_community_b2b",
+            "line_amount": 9175.0,
+            "rate": 0.2
+          }
+        }
+      }
+    ]
+  }
+}

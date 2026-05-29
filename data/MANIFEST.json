@@ -1,0 +1,24 @@
+{
+  "case_files_sha256": "3472544ffcd1434d59427c912ba5c77a8294de0fb675ba7d32f1572c5e410302",
+  "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+  "dev_family_counts": {
+    "b2c": 2,
+    "domestic": 2,
+    "intra_community_b2b": 2,
+    "mixed": 2
+  },
+  "eval_family_counts": {
+    "b2c": 10,
+    "domestic": 10,
+    "intra_community_b2b": 10,
+    "mixed": 10
+  },
+  "frozen_at_utc": "2026-05-29T16:53:24Z",
+  "grounding_doc": "docs/ORACLE_GROUNDING.md",
+  "n_dev_cases": 8,
+  "n_eval_cases": 40,
+  "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+  "oracle_commit_dirty": false,
+  "schema_path": "src/schemas/final_trace.schema.json",
+  "seed": 42
+}

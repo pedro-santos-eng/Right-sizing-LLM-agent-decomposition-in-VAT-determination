@@ -1,0 +1,111 @@
+{
+  "case_id": "eval_024",
+  "input": {
+    "case_id": "eval_024",
+    "customer_country": "DE",
+    "customer_vat_registered": false,
+    "line_items": [
+      {
+        "amount": 6532.0,
+        "description": "synthetic-RED_SERVICE",
+        "line_id": "L1",
+        "true_category": "RED_SERVICE"
+      }
+    ],
+    "supplier_country": "IE",
+    "transaction_type": "B2C"
+  },
+  "oracle_trace": {
+    "case_id": "eval_024",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "IE",
+      "lines": [
+        {
+          "category": "RED_SERVICE",
+          "exempt": false,
+          "liable_party": "supplier",
+          "line_id": "L1",
+          "non_charging_reason": null,
+          "outcome": "standard_charge",
+          "rate": 0.135,
+          "rate_band": "reduced",
+          "reverse_charge": false,
+          "vat_amount": 881.82
+        }
+      ],
+      "total_vat_amount": 881.82
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "b2c_cross_border",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.B2C_CROSS_BORDER",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_SERVICE",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "IE",
+        "transaction_type": "B2C"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "RED_SERVICE"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-RED_SERVICE",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "RED_SERVICE"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.135,
+            "rate_band": "reduced"
+          },
+          "rule_reference": "RATE.REDUCED",
+          "subtask": "RAT",
+          "support": {
+            "category": "RED_SERVICE",
+            "jurisdiction": "IE"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 881.82
+          },
+          "rule_reference": "RC.B2C.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "category": "RED_SERVICE",
+            "is_exempt": false,
+            "jur_path": "b2c_cross_border",
+            "line_amount": 6532.0,
+            "rate": 0.135
+          }
+        }
+      }
+    ]
+  }
+}
