@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oracle.local/schemas/final_trace.schema.json",
+  "title": "Emitted VAT trace (full)",
+  "description": "Single consolidated schema for the oracle. The per-record schemas listed in grounding §3 (CLS, JUR, RAT, EXM, RCH, line, final) live as $defs below and are reachable via #/$defs/<name>. There are no separate per-record schema files.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["case_id", "jur", "lines", "final"],
+  "properties": {
+    "case_id": { "type": "string" },
+    "jur": { "$ref": "#/$defs/jur" },
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/line" }
+    },
+    "final": { "$ref": "#/$defs/final" }
+  },
+  "$defs": {
+    "cls": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subtask", "decision", "support", "rule_reference"],
+      "properties": {
+        "subtask": { "const": "CLS" },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["category"],
+          "properties": {
+            "category": {
+              "enum": ["GEN_GOODS", "RED_GOODS", "GEN_SERVICE", "RED_SERVICE", "EXEMPT_SUPPLY"]
+            }
+          }
+        },
+        "support": { "type": "object" },
+        "rule_reference": { "type": "string" }
+      }
+    },
+    "jur": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subtask", "decision", "support", "rule_reference"],
+      "properties": {
+        "subtask": { "const": "JUR" },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["jurisdiction", "jur_path"],
+          "properties": {
+            "jurisdiction": { "enum": ["DE", "FR", "IE", "ES"] },
+            "jur_path": { "enum": ["domestic", "intra_community_b2b", "b2c_cross_border"] }
+          }
+        },
+        "support": { "type": "object" },
+        "rule_reference": { "type": "string" }
+      }
+    },
+    "rat": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subtask", "decision", "support", "rule_reference"],
+      "properties": {
+        "subtask": { "const": "RAT" },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["rate_band", "rate"],
+          "properties": {
+            "rate_band": { "type": ["string", "null"] },
+            "rate": { "type": ["number", "null"] }
+          }
+        },
+        "support": { "type": "object" },
+        "rule_reference": { "type": "string" }
+      }
+    },
+    "exm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subtask", "decision", "support", "rule_reference"],
+      "properties": {
+        "subtask": { "const": "EXM" },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["exempt"],
+          "properties": {
+            "exempt": { "type": "boolean" }
+          }
+        },
+        "support": { "type": "object" },
+        "rule_reference": { "type": "string" }
+      }
+    },
+    "rch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["subtask", "decision", "support", "rule_reference"],
+      "properties": {
+        "subtask": { "const": "RCH" },
+        "decision": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outcome", "reverse_charge", "liable_party", "vat_amount", "non_charging_reason"],
+          "properties": {
+            "outcome": { "enum": ["standard_charge", "reverse_charge", "exempt"] },
+            "reverse_charge": { "type": "boolean" },
+            "liable_party": { "enum": ["supplier", "customer", "none"] },
+            "vat_amount": { "type": "number" },
+            "non_charging_reason": { "enum": ["reverse_charge", "exempt", null] }
+          }
+        },
+        "support": { "type": "object" },
+        "rule_reference": { "type": "string" }
+      }
+    },
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["line_id", "cls", "rat", "exm", "rch"],
+      "properties": {
+        "line_id": { "type": "string" },
+        "cls": { "$ref": "#/$defs/cls" },
+        "rat": { "$ref": "#/$defs/rat" },
+        "exm": { "$ref": "#/$defs/exm" },
+        "rch": { "$ref": "#/$defs/rch" }
+      }
+    },
+    "final": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["currency", "total_vat_amount", "lines"],
+      "properties": {
+        "currency": { "type": "string" },
+        "jurisdiction": { "enum": ["DE", "FR", "IE", "ES"] },
+        "total_vat_amount": { "type": "number" },
+        "lines": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      }
+    }
+  }
+}

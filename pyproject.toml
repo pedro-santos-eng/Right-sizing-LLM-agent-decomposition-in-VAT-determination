@@ -1,0 +1,5 @@
+[tool.pytest.ini_options]
+# Put the repo root on sys.path so `import src.oracle.*` resolves when running
+# `pytest` from the project root (grounding doc references the src/ layout).
+pythonpath = ["."]
+testpaths = ["tests"]
