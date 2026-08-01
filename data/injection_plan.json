@@ -1,0 +1,583 @@
+{
+  "content_sha256": "1b3c3b77d3b799ac6f0c92a8a8f492d7023eda510c534a4474cc1417341fd323",
+  "generator_version": "L3-injection-v1",
+  "hallucinated_record_by_case": {
+    "eval_001": {
+      "decision": {
+        "liable_party": "customer",
+        "non_charging_reason": "reverse_charge",
+        "outcome": "reverse_charge",
+        "reverse_charge": true,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.B2B.INTRA_EU",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jur_path": "domestic"
+      }
+    },
+    "eval_002": {
+      "decision": {
+        "rate": 0.055,
+        "rate_band": "reduced"
+      },
+      "rule_reference": "RATE.REDUCED",
+      "subtask": "RAT",
+      "support": {
+        "category": "GEN_GOODS",
+        "jurisdiction": "FR"
+      }
+    },
+    "eval_003": {
+      "decision": {
+        "liable_party": "customer",
+        "non_charging_reason": "reverse_charge",
+        "outcome": "reverse_charge",
+        "reverse_charge": true,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.B2B.INTRA_EU",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_GOODS",
+        "jur_path": "domestic"
+      }
+    },
+    "eval_004": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_GOODS",
+        "customer_country": "DE",
+        "customer_vat_registered": true,
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "eval_005": {
+      "decision": {
+        "category": "GEN_GOODS"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-EXEMPT_SUPPLY",
+        "line_id": "L1"
+      }
+    },
+    "eval_006": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "EXEMPT_SUPPLY",
+        "customer_country": "FR",
+        "customer_vat_registered": false,
+        "supplier_country": "FR",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_007": {
+      "decision": {
+        "rate": 0.19,
+        "rate_band": "standard"
+      },
+      "rule_reference": "RATE.STANDARD",
+      "subtask": "RAT",
+      "support": {
+        "category": "RED_SERVICE",
+        "jurisdiction": "DE"
+      }
+    },
+    "eval_008": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_GOODS",
+        "customer_country": "IE",
+        "customer_vat_registered": true,
+        "supplier_country": "IE",
+        "transaction_type": "B2B"
+      }
+    },
+    "eval_009": {
+      "decision": {
+        "rate": 0.19,
+        "rate_band": "standard"
+      },
+      "rule_reference": "RATE.STANDARD",
+      "subtask": "RAT",
+      "support": {
+        "category": "RED_SERVICE",
+        "jurisdiction": "DE"
+      }
+    },
+    "eval_010": {
+      "decision": {
+        "category": "GEN_GOODS"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-EXEMPT_SUPPLY",
+        "line_id": "L1"
+      }
+    },
+    "eval_011": {
+      "decision": {
+        "liable_party": "none",
+        "non_charging_reason": "exempt",
+        "outcome": "exempt",
+        "reverse_charge": false,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.EXEMPT.NO_CHARGE",
+      "subtask": "RCH",
+      "support": {
+        "category": "RED_SERVICE",
+        "jur_path": "intra_community_b2b"
+      }
+    },
+    "eval_012": {
+      "decision": {
+        "category": "RED_GOODS"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-GEN_GOODS",
+        "line_id": "L1"
+      }
+    },
+    "eval_013": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_SERVICE",
+        "customer_country": "ES",
+        "customer_vat_registered": true,
+        "supplier_country": "IE",
+        "transaction_type": "B2B"
+      }
+    },
+    "eval_014": {
+      "decision": {
+        "liable_party": "none",
+        "non_charging_reason": "exempt",
+        "outcome": "exempt",
+        "reverse_charge": false,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.EXEMPT.NO_CHARGE",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_GOODS",
+        "jur_path": "intra_community_b2b"
+      }
+    },
+    "eval_015": {
+      "decision": {
+        "exempt": true
+      },
+      "rule_reference": "EXM.EXEMPT_SUPPLY",
+      "subtask": "EXM",
+      "support": {
+        "category": "GEN_GOODS"
+      }
+    },
+    "eval_016": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_SERVICE",
+        "customer_country": "IE",
+        "customer_vat_registered": true,
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "eval_017": {
+      "decision": {
+        "liable_party": "none",
+        "non_charging_reason": "exempt",
+        "outcome": "exempt",
+        "reverse_charge": false,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.EXEMPT.NO_CHARGE",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jur_path": "intra_community_b2b"
+      }
+    },
+    "eval_018": {
+      "decision": {
+        "liable_party": "none",
+        "non_charging_reason": "exempt",
+        "outcome": "exempt",
+        "reverse_charge": false,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.EXEMPT.NO_CHARGE",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jur_path": "intra_community_b2b"
+      }
+    },
+    "eval_019": {
+      "decision": {
+        "rate": 0.21,
+        "rate_band": "standard"
+      },
+      "rule_reference": "RATE.STANDARD",
+      "subtask": "RAT",
+      "support": {
+        "category": "RED_GOODS",
+        "jurisdiction": "ES"
+      }
+    },
+    "eval_020": {
+      "decision": {
+        "liable_party": "none",
+        "non_charging_reason": "exempt",
+        "outcome": "exempt",
+        "reverse_charge": false,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.EXEMPT.NO_CHARGE",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jur_path": "intra_community_b2b"
+      }
+    },
+    "eval_021": {
+      "decision": {
+        "rate": 0.055,
+        "rate_band": "reduced"
+      },
+      "rule_reference": "RATE.REDUCED",
+      "subtask": "RAT",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jurisdiction": "FR"
+      }
+    },
+    "eval_022": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_SERVICE",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "FR",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_023": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_GOODS",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "IE",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_024": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "RED_SERVICE",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "IE",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_025": {
+      "decision": {
+        "category": "RED_SERVICE"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-GEN_SERVICE",
+        "line_id": "L1"
+      }
+    },
+    "eval_026": {
+      "decision": {
+        "rate": 0.2,
+        "rate_band": "standard"
+      },
+      "rule_reference": "RATE.STANDARD",
+      "subtask": "RAT",
+      "support": {
+        "category": "EXEMPT_SUPPLY",
+        "jurisdiction": "FR"
+      }
+    },
+    "eval_027": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "EXEMPT_SUPPLY",
+        "customer_country": "ES",
+        "customer_vat_registered": false,
+        "supplier_country": "IE",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_028": {
+      "decision": {
+        "liable_party": "customer",
+        "non_charging_reason": "reverse_charge",
+        "outcome": "reverse_charge",
+        "reverse_charge": true,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.B2B.INTRA_EU",
+      "subtask": "RCH",
+      "support": {
+        "category": "RED_GOODS",
+        "jur_path": "b2c_cross_border"
+      }
+    },
+    "eval_029": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "ES"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_GOODS",
+        "customer_country": "DE",
+        "customer_vat_registered": false,
+        "supplier_country": "ES",
+        "transaction_type": "B2C"
+      }
+    },
+    "eval_030": {
+      "decision": {
+        "category": "GEN_SERVICE"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-RED_GOODS",
+        "line_id": "L1"
+      }
+    },
+    "eval_031": {
+      "decision": {
+        "exempt": false
+      },
+      "rule_reference": "EXM.NONE",
+      "subtask": "EXM",
+      "support": {
+        "category": "EXEMPT_SUPPLY"
+      }
+    },
+    "eval_032": {
+      "decision": {
+        "liable_party": "customer",
+        "non_charging_reason": "reverse_charge",
+        "outcome": "reverse_charge",
+        "reverse_charge": true,
+        "vat_amount": 0.0
+      },
+      "rule_reference": "RC.B2B.INTRA_EU",
+      "subtask": "RCH",
+      "support": {
+        "category": "GEN_SERVICE",
+        "jur_path": "b2c_cross_border"
+      }
+    },
+    "eval_033": {
+      "decision": {
+        "exempt": true
+      },
+      "rule_reference": "EXM.EXEMPT_SUPPLY",
+      "subtask": "EXM",
+      "support": {
+        "category": "GEN_SERVICE"
+      }
+    },
+    "eval_034": {
+      "decision": {
+        "category": "RED_GOODS"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-GEN_GOODS",
+        "line_id": "L1"
+      }
+    },
+    "eval_035": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "category": "GEN_GOODS",
+        "customer_country": "DE",
+        "customer_vat_registered": true,
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "eval_036": {
+      "decision": {
+        "category": "RED_SERVICE"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-GEN_SERVICE",
+        "line_id": "L1"
+      }
+    },
+    "eval_037": {
+      "decision": {
+        "exempt": true
+      },
+      "rule_reference": "EXM.EXEMPT_SUPPLY",
+      "subtask": "EXM",
+      "support": {
+        "category": "RED_GOODS"
+      }
+    },
+    "eval_038": {
+      "decision": {
+        "rate": 0.055,
+        "rate_band": "reduced"
+      },
+      "rule_reference": "RATE.REDUCED",
+      "subtask": "RAT",
+      "support": {
+        "category": "GEN_GOODS",
+        "jurisdiction": "FR"
+      }
+    },
+    "eval_039": {
+      "decision": {
+        "category": "GEN_GOODS"
+      },
+      "rule_reference": "CLS.ASSIGNED",
+      "subtask": "CLS",
+      "support": {
+        "description": "synthetic-EXEMPT_SUPPLY",
+        "line_id": "L1"
+      }
+    },
+    "eval_040": {
+      "decision": {
+        "rate": 0.2,
+        "rate_band": "standard"
+      },
+      "rule_reference": "RATE.STANDARD",
+      "subtask": "RAT",
+      "support": {
+        "category": "RED_SERVICE",
+        "jurisdiction": "FR"
+      }
+    }
+  },
+  "injection_seed": 20260801,
+  "outage_cases": [
+    "eval_004",
+    "eval_009",
+    "eval_014",
+    "eval_018",
+    "eval_021",
+    "eval_029",
+    "eval_035",
+    "eval_039"
+  ],
+  "tau_by_case": {
+    "eval_001": "RCH",
+    "eval_002": "RAT",
+    "eval_003": "RCH",
+    "eval_004": "JUR",
+    "eval_005": "CLS",
+    "eval_006": "JUR",
+    "eval_007": "RAT",
+    "eval_008": "JUR",
+    "eval_009": "RAT",
+    "eval_010": "CLS",
+    "eval_011": "RCH",
+    "eval_012": "CLS",
+    "eval_013": "JUR",
+    "eval_014": "RCH",
+    "eval_015": "EXM",
+    "eval_016": "JUR",
+    "eval_017": "RCH",
+    "eval_018": "RCH",
+    "eval_019": "RAT",
+    "eval_020": "RCH",
+    "eval_021": "RAT",
+    "eval_022": "JUR",
+    "eval_023": "JUR",
+    "eval_024": "JUR",
+    "eval_025": "CLS",
+    "eval_026": "RAT",
+    "eval_027": "JUR",
+    "eval_028": "RCH",
+    "eval_029": "JUR",
+    "eval_030": "CLS",
+    "eval_031": "EXM",
+    "eval_032": "RCH",
+    "eval_033": "EXM",
+    "eval_034": "CLS",
+    "eval_035": "JUR",
+    "eval_036": "CLS",
+    "eval_037": "EXM",
+    "eval_038": "RAT",
+    "eval_039": "CLS",
+    "eval_040": "RAT"
+  }
+}

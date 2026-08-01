@@ -29,6 +29,9 @@ AGENT_CONTEXT_MODULES = [
     "src.harness.prompts",
     "src.harness.agents",
     "src.harness.model_client",
+    # Layer-3 runtime controller: stdlib-only, loads the precomputed plan; must
+    # reach no oracle module at all (grounding L3 §1, §8).
+    "src.harness.injection",
 ]
 
 # Control + validation modules (grounding §9). Like the Layer-1 validation.py,

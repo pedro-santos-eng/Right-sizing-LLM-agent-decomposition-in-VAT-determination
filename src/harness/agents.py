@@ -44,6 +44,10 @@ from src.harness.surface import WorkerSlice
 # pathological tool-call loop. Flagged for review (grounding §9 ambiguity rule).
 MAX_TOOL_ITERATIONS = 8
 
+# Distinct extraction_error emitted when the tool-call cap is hit while the last
+# response still requests tools (grounding L3 §6; DEVLOG 2026-08-01 follow-up).
+TOOL_CAP_EXHAUSTED = "TOOL_CAP_EXHAUSTED"
+
 
 # ---------------------------------------------------------------------------
 # Native-function-calling tool specs (JSON Schemas) for the four Layer-1 tools.
@@ -197,19 +201,30 @@ class Worker:
                     tool_calls=resp.tool_calls,
                 )
             )
-            if resp.tool_calls and iters < self.max_tool_iters:
-                iters += 1
-                for tc in resp.tool_calls:
-                    result = self._execute_tool(tc.name, tc.arguments)
-                    self.history.append(
-                        Message(
-                            role="tool",
-                            content=json.dumps(result, sort_keys=True, ensure_ascii=True),
-                            tool_call_id=tc.id,
-                            name=tc.name,
+            if resp.tool_calls:
+                if iters < self.max_tool_iters:
+                    iters += 1
+                    for tc in resp.tool_calls:
+                        result = self._execute_tool(tc.name, tc.arguments)
+                        self.history.append(
+                            Message(
+                                role="tool",
+                                content=json.dumps(result, sort_keys=True, ensure_ascii=True),
+                                tool_call_id=tc.id,
+                                name=tc.name,
+                            )
                         )
-                    )
-                continue
+                    continue
+                # Cap reached while the last response STILL requests tools: tag
+                # this distinctly so Layer-4 analysis can attribute these
+                # terminals separately from ordinary no-fenced-block failures
+                # (grounding L3 §6; DEVLOG 2026-08-01 follow-up).
+                return WorkerTurn(
+                    text=resp.content,
+                    payload=None,
+                    extraction_error=TOOL_CAP_EXHAUSTED,
+                    model_calls=turn_calls,
+                )
             payload, err = extract_payload(resp.content)
             return WorkerTurn(
                 text=resp.content,

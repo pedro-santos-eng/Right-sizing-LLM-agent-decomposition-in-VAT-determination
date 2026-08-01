@@ -35,7 +35,7 @@ from typing import Optional
 from src.harness import runlog, tools as tools_mod
 from src.harness.agents import make_worker
 from src.harness.model_client import ModelClient
-from src.harness.orchestrator import RunConfig, _manifest_identity
+from src.harness.orchestrator import RunConfig, _injection_marker, _manifest_identity
 from src.harness.prompts import (
     ROLE_PREAMBLE,
     SUBTASK_INSTRUCTIONS,
@@ -287,7 +287,7 @@ async def run_s0(
 
     run_record = _build_s0_run_record(
         case_id, status, gate_ok, gate_failed, log, model_calls,
-        config, knobs, retries,
+        config, knobs, retries, injection,
     )
     return S0Result(
         case_id=case_id,
@@ -313,7 +313,7 @@ def run_s0_blocking(
 
 
 def _build_s0_run_record(
-    case_id, status, gate_ok, gate_failed, log, model_calls, config, knobs, retries
+    case_id, status, gate_ok, gate_failed, log, model_calls, config, knobs, retries, injection
 ) -> dict:
     oracle_commit, dataset_sha256 = _manifest_identity()
     record = runlog.new_run_record(
@@ -355,5 +355,7 @@ def _build_s0_run_record(
         "prompt_hashes": {S0_WORKER_ID: s0_prompt_hash(knobs)},
         "case_status": status,
         "s0_knobs_plain": knobs.is_plain(),
+        # §6: injection marker echoed into every run record.
+        "injection": _injection_marker(injection, case_id),
     }
     return record

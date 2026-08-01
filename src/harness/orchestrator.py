@@ -275,10 +275,25 @@ class _Orchestrator:
         return ctx
 
     def _validate_subtask(
-        self, subtask: str, records: dict[str, dict], payload_error: Optional[str]
+        self,
+        subtask: str,
+        records: dict[str, dict],
+        payload_error: Optional[str],
+        injected_ids: frozenset[str] = frozenset(),
     ) -> tuple[bool, list[str], list[dict]]:
         """Validate all records for a subtask. Returns
-        (accepted, failed_checks_verbatim, verdict_dicts)."""
+        (accepted, failed_checks_verbatim, verdict_dicts).
+
+        A record produced by the Layer-3 interception seam (``injected_ids``) is
+        validated RECORD-LEVEL / input-blind (accepted={}), per L3 §4 ("the
+        validator is input-blind by design") and DECISION 3 ("the record-level
+        reading of 'satisfies 𝒱' at the interception point"). This is what makes
+        an intentionally cross-record-inconsistent injection (e.g. EXM exempt
+        negated against a non-exempt CLS) enter the trace WITHOUT firing a subtask
+        retry; whether it then survives the assembly-time ``validate_trace`` gate
+        is the measured phenomenon. The offline generator guarantees every
+        injected record passes this input-blind check. FLAGGED (bounded
+        interpretation, L3 §4/DECISION 3)."""
         failed: list[str] = []
         verdicts: list[dict] = []
         if payload_error:
@@ -286,6 +301,8 @@ class _Orchestrator:
         if subtask in CASE_LEVEL_SUBTASKS:
             rec = records.get("__case__")
             if rec is not None:
+                # JUR is already validated input-blind (accepted={}); an injected
+                # JUR is thus naturally record-level.
                 v = validate_record(subtask, rec, accepted={})
                 verdicts.append(_verdict_dict(v, line_id=None))
                 if not v.accepted:
@@ -301,7 +318,7 @@ class _Orchestrator:
             if rec is None:
                 all_ok = False
                 continue
-            ctx = self._accepted_context_for_line(lid)
+            ctx: dict[str, dict] = {} if lid in injected_ids else self._accepted_context_for_line(lid)
             v = validate_record(subtask, rec, accepted=ctx)
             verdicts.append(_verdict_dict(v, line_id=lid))
             if not v.accepted:
@@ -320,19 +337,24 @@ class _Orchestrator:
 
     def _apply_interception(
         self, subtask: str, records: dict[str, dict]
-    ) -> dict[str, dict]:
+    ) -> tuple[dict[str, dict], frozenset[str]]:
         """Between payload extraction and validation, replace a τ record with a
-        Layer-3-constructed one if the interception seam fires (§3.6)."""
+        Layer-3-constructed one if the interception seam fires (§3.6). Returns
+        (possibly-substituted records, ids of substituted records). Records are
+        iterated in case order, so the first consult is the first line — the
+        seam's first-line target (L3 §3.2)."""
         out = dict(records)
+        injected: set[str] = set()
         for lid, rec in records.items():
             replacement = self.injection.hallucinate(self.case_id, subtask, rec)
             if replacement is not None:
                 out[lid] = replacement
+                injected.add(lid)
                 self._log_injection_fired(
                     tools_mod.SEAM_HALLUCINATED_OUTPUT, subtask,
                     "hallucinated_output interception",
                 )
-        return out
+        return out, frozenset(injected)
 
     def _log_injection_fired(self, seam: str, subtask: Optional[str], note: str) -> None:
         ctx = tools_mod.get_context()
@@ -391,9 +413,9 @@ class _Orchestrator:
         pending: list[str] = []
         for tau in owned_order:
             records, prec_err = self._records_from_payload(payload, tau)
-            records = self._apply_interception(tau, records)
+            records, injected_ids = self._apply_interception(tau, records)
             err = ext_err or prec_err
-            accepted, failed, verdicts = self._validate_subtask(tau, records, err)
+            accepted, failed, verdicts = self._validate_subtask(tau, records, err, injected_ids)
             self.record_verdicts.extend(_tag(verdicts, attempt=0))
             if accepted:
                 self._accept_subtask(tau, records)
@@ -423,9 +445,9 @@ class _Orchestrator:
             if payload is not None and "final" in payload:
                 self.final_block = payload.get("final")
             records, prec_err = self._records_from_payload(payload, tau)
-            records = self._apply_interception(tau, records)
+            records, injected_ids = self._apply_interception(tau, records)
             err = ext_err or prec_err
-            accepted, failed, verdicts = self._validate_subtask(tau, records, err)
+            accepted, failed, verdicts = self._validate_subtask(tau, records, err, injected_ids)
             tagged = _tag(verdicts, attempt=self.subtask_state[tau].repairs_used)
             self.record_verdicts.extend(tagged)
             wrec["retry_verdicts"].extend(tagged)
@@ -590,8 +612,10 @@ class _Orchestrator:
             if payload is not None and "final" in payload:
                 self.final_block = payload.get("final")
             records, prec_err = self._records_from_payload(payload, "RCH")
-            records = self._apply_interception("RCH", records)
-            accepted, failed, verdicts = self._validate_subtask("RCH", records, ext_err or prec_err)
+            records, injected_ids = self._apply_interception("RCH", records)
+            accepted, failed, verdicts = self._validate_subtask(
+                "RCH", records, ext_err or prec_err, injected_ids
+            )
             self.record_verdicts.extend(_tag(verdicts, attempt=rch_state.repairs_used))
             if accepted:
                 self._accept_subtask("RCH", records)
@@ -637,8 +661,28 @@ class _Orchestrator:
             "execution_constants": self.config.constants.as_dict(),
             "prompt_hashes": prompt_hashes(self.condition),
             "case_status": status,
+            # §6: injection marker echoed into every run record (accounting is the
+            # Layer-1 run-record extension point; additionalProperties true).
+            "injection": _injection_marker(self.injection, self.case_id),
         }
         return record
+
+
+def _injection_marker(controller, case_id: str) -> dict:
+    """Build the L3 §6 run-record marker ``{mode, tau, fired, plan_sha256,
+    details}`` from any controller, DUCK-TYPED so the Layer-1/2 no-op controller
+    (which lacks these accessors) yields sensible ``none`` defaults. Kept in
+    Layer 2 (not injection.py) to avoid a Layer-2 → Layer-3 import."""
+    tau_for = getattr(controller, "tau_for", None)
+    did_fire = getattr(controller, "did_fire", None)
+    details = getattr(controller, "marker_details", None)
+    return {
+        "mode": getattr(controller, "mode", "none"),
+        "tau": tau_for(case_id) if callable(tau_for) else None,
+        "fired": bool(did_fire(case_id)) if callable(did_fire) else False,
+        "plan_sha256": getattr(controller, "plan_sha256", None),
+        "details": details(case_id) if callable(details) else {},
+    }
 
 
 def _verdict_dict(v, line_id: Optional[str]) -> dict:
