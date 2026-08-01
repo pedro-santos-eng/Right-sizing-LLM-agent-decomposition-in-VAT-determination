@@ -1,5 +1,93 @@
 # Development Log
 
+## 2026-08-01 — Part 2, Layer 2 (orchestration) implemented; gate green; flags reviewed and closed
+
+Layer-2 source of truth: HARNESS_GROUNDING_2_ORCHESTRATION.md v1.1. Built on the
+frozen Layer-1 surface/tools/validation/runlog; Part 1 (oracle) and the frozen
+dataset untouched (`freeze_dataset --verify` OK; `dataset_sha256 3dc683ec…`).
+
+Delivered (§0–§8), commit `4654dc1`:
+- model_client.py — frozen `EXECUTION_CONSTANTS` (§1); provider-neutral
+  ModelClient interface; in-repo scripted client (per-tag queues → deterministic
+  under C4 concurrency) + lazy anthropic-SDK real client (key read from env,
+  never stored elsewhere, never logged).
+- orchestrator.py — deterministic Magentic-One ledger semantics, NO orchestrator
+  LLM; per-worker bundle dispatch, per-subtask repair, wave scheduler with
+  within-case concurrency cap 2 (C4 RAT‖EXM), assembly + authoritative
+  `validate_trace` gate, injection seams, full per-call accounting.
+- agents.py / prompts.py — worker tool loop + P_r assembly as a pure function of
+  the slice; output contracts generated from the frozen schema `$defs`;
+  `PROMPT_HASHES`.
+- s0.py — S0 whole-trace repair loop + S0′ matched-token knobs + token
+  measurement.
+- Tests: scripted-client harness (147 passed, 2 skipped) covering every §8/§10
+  item; live smoke skip-if-unconfigured; import-graph isolation extended to all
+  Layer-2 modules.
+
+### Independent validation (2026-08-01, second Claude instance, clean sandbox)
+
+Gate reproduced from the working tree: 147 passed + 2 skipped; spot-check
+clean-room script exit 0; `freeze_dataset --verify` OK with the frozen hashes;
+`src/oracle/`, `src/schemas/`, `data/` byte-identical to the `part1-frozen`
+state. Targeted code reads on orchestrator.py, agents.py, model_client.py,
+prompts.py confirmed the behaviors the flags depend on.
+
+### Flags reviewed and CLOSED
+
+1. **§2 fallback invoked — APPROVED.** Live client on the anthropic SDK behind
+   our ModelClient interface, not AutoGen's AssistantAgent. Basis: the ratified
+   DECISION 1 contains an explicit fallback clause ("to the `anthropic` SDK
+   behind the same interface if the maintenance-mode client blocks a
+   requirement"), and the blocked requirements are textual — DECISION 4's
+   per-call timeout/transport-retry pins, §7's per-call latency / api_retry /
+   stop-reason accounting, §5's last-fenced-JSON extraction — all inside the
+   AssistantAgent loop boundary in 0.7.5. Paper unaffected: §4.2
+   ("Magentic-One-style … [Fourney et al., 2024]") and §6
+   ("AutoGenBench-style … pattern") are design-pattern citations, not
+   framework claims; no manuscript edit required. `autogen 0.7.5` retained as a
+   pinned dependency with the rationale documented in pyproject.toml; it is
+   imported by no Layer-2 module.
+2. **Import-graph resolution — APPROVED (within the ratified L1 rule, not a
+   deviation).** L1 §1.2 explicitly declares `validator.py` importable
+   ("validation is condition-invariant machinery, not a label source").
+   Verified on the frozen validator: the `labeler` import is the `CaseTrace`
+   type only, and every `failed_checks` string is built from the agent's own
+   emitted trace plus `rules.py` tables (schema errors, citation presence,
+   citation–decision consistency, RAT-vs-table) — zero references to oracle
+   labels. Strict {oracle, rules} isolation holds on the true agent-context
+   modules (prompts/agents/model_client, fresh-interpreter test);
+   scorer-unreachability + no-direct-import on orchestrator/s0 exceeds the
+   requirement.
+3. **Repair-message contents — doc-internal tension resolved, reading
+   RECORDED.** §3.2 says the repair follow-up contains the verbatim
+   `failed_checks` *and the output contract for that subtask*; §9 says verbatim
+   `failed_checks` only. Implementation follows §9 (and paper §4.2/§10.2:
+   feedback limited to structured validator output): fixed condition-invariant
+   template + verbatim checks, no contract re-inclusion. The contract remains
+   in-context via the persistent worker system prompt, so no information is
+   lost. This reading is the accepted one; §3.2 is not amended.
+
+### Bounded choice, accepted with one follow-up
+
+`MAX_TOOL_ITERATIONS = 8` safety cap on the worker tool loop (not a paper
+knob; runtime otherwise bounded by per-call timeout + wall cap). On
+exhaustion, the turn falls through to payload extraction and surfaces through
+the §5 ladder — budget-consuming and visible in verdicts, never silent.
+Follow-up before the live sweep (non-blocking, may ride with Layer 3): tag
+cap-exhaustion distinctly in the worker turn (e.g. extraction_error
+`"TOOL_CAP_EXHAUSTED"` when the last response still requested tools) so sweep
+analysis can attribute these terminals separately from ordinary
+no-fenced-block failures.
+
+Guardrails honored: orchestrator makes no LLM calls; repair feedback is
+verbatim validator output; `final` emitted by the RCH owner (never
+harness-computed); no per-condition prompt tuning; S0 tuning confined to
+`dev_001..dev_008`.
+
+Next: Layer 3 (injection content). Layer 4 (sweep) blocked on: live smoke with
+a configured `ANTHROPIC_API_KEY`, the TOOL_CAP marker above, and the Finding-3
+decision (recorded 2026-08-01 earlier entry: resolved as §10.2 disclosure).
+
 ## 2026-08-01 — Layer-2 contract committed; §3.3 spot-check reconstructed; line endings normalized
 
 ### Committed
