@@ -1,0 +1,23 @@
+# Normalize line endings in the repository to LF.
+#
+# The working clone is on Windows; without this, every text file in a fresh
+# checkout shows as modified (CRLF in the worktree vs LF in the index) and any
+# `git add -A` sweeps 60+ unrelated files into the commit. Part 2 commits need
+# to be readable diffs, so this is set before Layer 2 begins.
+#
+# After adding this file, run once (see docs/DEVLOG.md):
+#   git add --renormalize .
+#   git status          # expect: nothing to commit, working tree clean
+* text=auto
+
+# Explicit for the file types in this repo.
+*.py    text diff=python
+*.md    text
+*.json  text
+*.toml  text
+*.patch text eol=lf
+
+# Never touch these.
+*.png   binary
+*.pdf   binary
+*.zip   binary
