@@ -1,5 +1,67 @@
 # Development Log
 
+## 2026-08-01 — Layer-2 contract committed; §3.3 spot-check reconstructed; line endings normalized
+
+### Committed
+- `docs/HARNESS_GROUNDING_2_ORCHESTRATION.md` v1.1 (`404d2ac`). The file was
+  authored 2026-07-31 but the copy into `docs/` failed silently; the repo went
+  one session without its Layer-2 source of truth. Verified byte-identical
+  (modulo line endings) to the authored version. All four `[DECISION n]` items
+  ratified; §12 reflects this.
+- `docs/SPOTCHECK_3.3.md` — verification record for paper §3.3. The 2026-07-28
+  record was produced but never reached disk; this is a fresh re-execution, not
+  a transcript, and it supersedes the earlier one.
+- `scripts/spotcheck_cleanroom.py` — the clean-room re-derivation behind that
+  record. Imports nothing from `src/oracle/`; reads only the frozen case files.
+- `.gitattributes` (`* text=auto`) + `git add --renormalize .`.
+
+### Spot-check result
+Clean-room re-derivation from `ORACLE_GROUNDING.md` §1–§2 over the whole corpus:
+48 cases (40 eval + 8 dev), 65 line determinations (54 + 11). Jurisdiction
+routing, classification, rate selection, exemption detection, reverse-charge
+routing, arithmetic, rounding and case-level aggregation reproduce exactly.
+Rule-reference keys are single-valued per semantic branch.
+
+**One divergence, 22 records, one field:** `liable_party` on the exempt branch.
+The engine emits `"none"`; §2.1 specifies `liable party` for the domestic,
+intra-community B2B and B2C branches but is silent for exempt, so a
+document-only reader derives `"supplier"`. Setting the script's
+`EXEMPT_LIABLE_PARTY` constant to `"none"` drops mismatches to 0 — that field is
+the entire gap. Engine correct, document incomplete.
+
+### Findings carried forward
+1. **`ORACLE_GROUNDING.md` §2.1 needs `liable party = none` on the exempt
+   bullet.** Blocking: `liable party` is a scored field (paper §6.1) and worker
+   prompts derive from this text, so agents would be scored on a field the
+   prompt does not determine. Doc-only change; no re-freeze.
+2. **EXEMPT-over-REVERSE_CHARGE precedence is unexercised** — zero
+   `EXEMPT_SUPPLY` lines inside `intra_community_b2b` cases, in *both* splits
+   (extends the 2026-07-28 finding, which covered eval only). A constructed
+   probe against the real engine confirms exemption dominates per line and the
+   trace validates. Sampling gap, not a logic defect; disclose in §10.2.
+3. **The dev split contains no exempt line at all** (0 of 11). S0 is tuned on
+   dev_001–dev_008 while 11 of 54 eval determinations (20%) are exempt, so S0
+   never sees the `rate: null` shape or the `liable_party: "none"` value.
+   Threatens the §4.5 fairness claim. Decide before S0 tuning: disclose in
+   §10.2, or regenerate the dev split with exempt coverage. Correction to an
+   earlier note: both manifest hashes cover eval **and** dev, so regeneration
+   requires a re-freeze and changes `dataset_sha256` / `case_files_sha256`
+   (eval files and the `part1-frozen` tag untouched). Disclosure is the
+   schedule-safe default.
+4. **JUR is resolved from `line_items[0]`**, where §2.2 describes per-line
+   resolution "where the kind affects it". Cannot differ under the bounded rules
+   (checked: no case yields a non-unique case-level jurisdiction). Recorded for
+   documentation accuracy; becomes load-bearing if the rule set widens.
+
+### Integrity
+`part1-frozen` → `e2d2bdd` unchanged. `dataset_sha256 3dc683ec…`,
+`case_files_sha256 3472544f…` unchanged. No oracle source, schema or evaluation
+case was modified.
+
+### Next
+Layer 2 implementation may begin once action 1 is applied and Layer 1's
+readiness gate is re-confirmed green.
+
 ## 2026-07-31 — Part 2, Layer 1 complete: activity surface
 
 Layer-1 readiness gate (HARNESS_GROUNDING_1_SURFACE §10) is met. Implemented the

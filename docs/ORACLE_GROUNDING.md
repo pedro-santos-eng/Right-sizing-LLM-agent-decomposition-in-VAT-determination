@@ -6,6 +6,11 @@
 > and the project infrastructure plan. Where this document and a code comment disagree, **this document wins**.
 > If a requirement here appears wrong or incomplete, stop and flag it — do not silently reinterpret it.
 
+> **Amended 2026-08-01:** the §2.1 RCH exempt bullet now states `liable party = none`.
+> The §3.3 spot-check (`docs/SPOTCHECK_3.3.md` §4.1) found the bullet silent on this field
+> while the engine emits `"none"`; the amendment closes the specification gap. No rule
+> semantics changed and no re-freeze is required — the frozen dataset already carries `"none"`.
+
 ---
 
 ## 0. Purpose and role in the project
@@ -130,7 +135,7 @@ NLP — it knows the ground truth because it generated the case. The agents do t
 - **Domestic** → supplier charges VAT; liable party = supplier; reverse_charge = false.
 - **Intra-community B2B (goods or general-rule services), cross-border, customer VAT-registered** → **reverse charge applies**; liable party = customer (self-accounts); reverse_charge = true; supplier charges no VAT (non-charging reason = "reverse charge, Art. 196-style").
 - **B2C cross-border** → supplier charges VAT in the place of supply (supplier country per the bounded JUR rule); reverse_charge = false; liable party = supplier.
-- **Exempt supply** → no VAT charged regardless of the above; reverse_charge = false; non-charging reason = "exempt supply". (Exemption dominates: if the line is EXEMPT_SUPPLY, RCH records exempt, not reverse charge.)
+- **Exempt supply** → no VAT charged regardless of the above; reverse_charge = false; liable party = none (no party is liable where nothing is charged); non-charging reason = "exempt supply". (Exemption dominates: if the line is EXEMPT_SUPPLY, RCH records exempt, not reverse charge.)
 - VAT amount: if VAT is charged, `amount = line_amount * rate`; otherwise `amount = 0` (or `null`) with an explicit non-charging reason ∈ {reverse_charge, exempt}.
 
 > **Precedence rule (must be encoded explicitly):** EXEMPT dominates REVERSE-CHARGE dominates STANDARD-CHARGE.
