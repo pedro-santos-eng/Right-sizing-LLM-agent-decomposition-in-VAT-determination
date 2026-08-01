@@ -1,3 +1,23 @@
+[project]
+name = "vat-decomposition-harness"
+version = "0.2.0"
+description = "Right-sizing LLM-agent decomposition in VAT determination — oracle + harness."
+requires-python = ">=3.10"
+dependencies = [
+    "jsonschema>=4.20",
+    # Layer-2 model backend (grounding HARNESS_GROUNDING_2_ORCHESTRATION §2).
+    # AutoGen 0.7.5 is pinned as the DOCUMENTED reference backend (paper's
+    # AutoGenBench-style isolation pattern, §6.7). NOTE: the live model client is
+    # implemented on the `anthropic` SDK directly, invoking the §2 fallback
+    # clause ("the interface is ours") because AutoGen's AssistantAgent abstracts
+    # per-call usage/timeout/tool-loop control that this harness's primary cost
+    # metric (§7) requires. autogen is NOT imported by any Layer-2 module. See
+    # src/harness/model_client.py's flag and the DEVLOG.
+    "autogen-agentchat==0.7.5",
+    "autogen-ext[anthropic]==0.7.5",
+    "anthropic>=0.48",
+]
+
 [tool.pytest.ini_options]
 # Put the repo root on sys.path so `import src.oracle.*` resolves when running
 # `pytest` from the project root (grounding doc references the src/ layout).
