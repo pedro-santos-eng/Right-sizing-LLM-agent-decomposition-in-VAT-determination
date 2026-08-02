@@ -9,3 +9,4 @@ __pycache__/
 # and analysis/ are derived data.
 /results/*
 !/results/README.md
+.anthropic_key
