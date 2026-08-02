@@ -1,5 +1,69 @@
 # Development Log
 
+## 2026-08-02 — Part 2, Layer 4 close: flags reviewed; §6.6 rendered faithfully; harness COMPLETE
+
+Independent validation (second Claude instance, clean sandbox): zip with full
+history — `git fsck` clean, HEAD `b676d3b`, tag `part1-frozen` intact, working
+tree clean; gate reproduced (199 passed + 2 skipped, spot-check exit 0,
+`freeze_dataset --verify` OK); all `src/harness/*.py` byte-identical to the
+Layer-3 state (additive test extensions only), frozen trees untouched.
+
+### Flags reviewed and CLOSED
+
+1. **§6.6 falsification criteria — RESOLVED WITH CORRECTION.** The three
+   implemented criteria did not match the paper: they tested C2>C1, C1 not
+   materially below C4, and S0′ not materially above C2. Replaced with the
+   faithful rendering in `analyze.evaluate_falsification`:
+   (1) *intermediate-optimum (RQ1)* — triggered iff neither C2 nor C3
+   materially outperforms **both** endpoints C1 and C4 on final-answer
+   accuracy, or the C1–C4 accuracy sequence is monotonic in either direction
+   (automatic); this requires three supplementary accuracy contrasts
+   (C2–C4, C3–C1, C3–C4), added as a descriptive `supplementary_contrasts`
+   table **outside** the Holm family per §6.5;
+   (2) *orchestration benefit (RQ2)* — triggered iff S0 weakly
+   Pareto-dominates all of C1–C4 on the (token-cost, accuracy) point
+   estimates; order-independent evaluation with an honest `None` when a
+   condition is missing and no definitive defeat exists;
+   (3) *prompt-budget confound (RQ3)* — the exact conjunction: S0′_C2 vs C2
+   not significant under the Holm-corrected paired permutation test AND the
+   paired bootstrap CI includes zero.
+   The falsification table now reports `triggered` / `verdict` / `evidence` /
+   `paper_rule` per criterion; "materially outperforms" remains the ratified
+   rule (CI excludes zero positively AND d_z ≥ 0.2). Tests rewritten to the
+   real semantics, covering: supported-via-C3, no-intermediate-beats-both,
+   monotonic auto-trigger, Pareto dominance with ties, dominance defeated on
+   one axis, and the RQ3 conjunction in all four states. Suite 199 → 204.
+   A statistical refinement was folded in: the sampled permutation p now uses
+   the (1 + hits)/(1 + B) estimator (Phipson & Smyth, 2010), so a reported p
+   is never exactly zero; the exact-enumeration branch already contained the
+   identity permutation and is unchanged. The real 40-case path is unaffected
+   in mechanics (always the pinned 1,000 flips).
+2. **Price sheet — RESOLVED, confirmed.** $1/$5 per 1M input/output tokens
+   for `claude-haiku-4-5` confirmed against Anthropic's published pricing as
+   of 2026-08-02 (product page and launch announcement; cross-checked against
+   an Aug-1-2026 price tracker listing `claude-haiku-4-5-20251001` at $1/$5).
+   `data/price_sheet.json` note updated from FLAG to CONFIRMED.
+3. **Permutation scale switch — APPROVED.** Exact sign-flip enumeration only
+   at test scale (2^k ≤ 2^14, hand-computable fixtures); the 40-case path
+   always uses the pinned 1,000 random flips under `permutation_seed
+   20260806`.
+
+Gate after corrections: **204 passed, 2 skipped**; zero diffs under the
+frozen trees; Layers 1–3 modules untouched.
+
+### Part 2 harness is COMPLETE (Layers 1–4)
+
+Everything from here is a live decision, in order, each with a
+DEVLOG-recorded go-ahead:
+1. Configure `ANTHROPIC_API_KEY` → the two live smokes flip skipped→passed.
+2. **Phase 0 dry run** (L2 §11): dev_001..005, S0+C1–C4, R=1, mode none;
+   gates — C1 accuracy in [40%, 90%], extraction/parse failures < 10%, cost
+   projection within budget (projection recorded here; it sets the per-phase
+   token/dollar caps).
+3. VM provisioning for the measured phases (latency/retries are measured
+   outputs; the laptop remains the controller only).
+4. Phase 1 main sweep, then phases 2–4 per HARNESS_GROUNDING_4_SWEEP §1.
+
 ## 2026-08-01 — Part 2, Layer 3 (failure injection) implemented; gate green; flags reviewed and closed
 
 Layer-3 source of truth: HARNESS_GROUNDING_3_INJECTION.md v1.0 (contract
