@@ -43,7 +43,7 @@ AGENT_CONTEXT_MODULES = [
 # ``labeler``/``scorer`` DIRECTLY. All agent-context string assembly is delegated
 # to the strictly-isolated modules above, so no label value can reach a prompt.
 # (Flagged bounded interpretation of §9's "extend the test"; see DEVLOG.)
-CONTROL_MODULES = ["src.harness.orchestrator", "src.harness.s0"]
+CONTROL_MODULES = ["src.harness.orchestrator", "src.harness.s0", "scripts.run_one"]
 
 _LABEL_SOURCES = ("src.oracle.labeler", "src.oracle.scorer")
 

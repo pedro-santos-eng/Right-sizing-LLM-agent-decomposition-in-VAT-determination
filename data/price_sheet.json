@@ -1,0 +1,8 @@
+{
+  "model": "claude-haiku-4-5-20251001",
+  "usd_per_1m_input_tokens": 1.0,
+  "usd_per_1m_output_tokens": 5.0,
+  "currency": "USD",
+  "retrieval_date": "2026-08-02",
+  "note": "Pinned price sheet (grounding L4 §5). Dollar cost is DERIVED from token counts at scoring time only. Any price change during the study is a new file version recorded in the DEVLOG. FLAG for review: the input/output rates should be confirmed against the vendor price page at the retrieval_date before any reported dollar figure is published."
+}

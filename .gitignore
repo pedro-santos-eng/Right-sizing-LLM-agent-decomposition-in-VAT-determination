@@ -3,3 +3,9 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .benchmarks/
+
+# Layer-4 sweep artifacts (grounding L4 §8): results/ is gitignored except its
+# committed README describing the layout. Raw records are regenerable; scored.csv
+# and analysis/ are derived data.
+/results/*
+!/results/README.md
