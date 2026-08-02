@@ -209,10 +209,17 @@ def _hallucinate_rch(case, oracle_line, oracle_jur) -> dict:
             "vat_amount": round(line_amount * rate, 2),
             "non_charging_reason": None,
         }
-        # standard_charge has two canonical keys (domestic / b2c); the domestic
-        # supplier-charges key is chosen (§4 "the outcome's key"; either passes
-        # citation-presence — flagged as a bounded pick).
-        rule = Rule.RCH_DOMESTIC_SUPPLIER.value
+        # standard_charge has two canonical keys; the citation is path-aware
+        # (review flag 2, DEVLOG 2026-08-01): the key matching the case's
+        # oracle jur_path — domestic -> RC.DOMESTIC.SUPPLIER_CHARGES,
+        # b2c_cross_border -> RC.B2C.SUPPLIER_CHARGES. intra_community_b2b
+        # cannot reach this branch for the frozen corpus (standard_charge
+        # injections arise only from oracle-exempt lines; no exempt line occurs
+        # inside an intra-EU B2B case — SPOTCHECK_3.3 §4.2), so the domestic
+        # key is the total-function default.
+        jur_path = oracle_jur["decision"]["jur_path"]
+        rule = (Rule.RCH_B2C_SUPPLIER.value if jur_path == "b2c_cross_border"
+                else Rule.RCH_DOMESTIC_SUPPLIER.value)
 
     return {
         "subtask": "RCH",
