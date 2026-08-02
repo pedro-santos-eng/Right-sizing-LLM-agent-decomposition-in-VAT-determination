@@ -1,5 +1,99 @@
 # Development Log
 
+## 2026-08-01 — Part 2, Layer 3 (failure injection) implemented; gate green; flags reviewed and closed
+
+Layer-3 source of truth: HARNESS_GROUNDING_3_INJECTION.md v1.0 (contract
+`fe2c25d`). Built on frozen Part-1 + Layers 1–2. Zero diffs under
+`src/oracle/`, `src/schemas/`, `data/eval_cases/`, `data/dev_cases/`;
+`freeze_dataset --verify` OK.
+
+Delivered (§1–§9), commit `c3b1d07` + the review-driven follow-up commit:
+- scripts/generate_injection_plan.py — offline generator (imports `labeler`,
+  offline only; imported by no `src/harness/` module). Per record it asserts
+  both that record-level `validate_record` passes and that the decision
+  differs from the oracle label.
+- data/injection_plan.json — committed artifact. `injection_seed 20260801`;
+  uniform τ over T (CLS 8 / JUR 11 / RAT 8 / EXM 4 / RCH 9); first-line
+  targeting; 8 outage cases (eval_004/009/014/018/021/029/035/039, exactly
+  one per block of 5); `content_sha256 1b3c3b77…`. Regeneration is
+  byte-identical.
+- src/harness/injection.py — stdlib-only controller; three frozen seams with
+  per-run fire-once state (timeout once on the initial responsible
+  invocation, repairs never re-forced; hallucinate once per case on the
+  first-line τ record; outage on the first `rate_table_lookup` per case,
+  then recovery) + §6 marker accessors.
+- Run-record marker `accounting.injection {mode, tau, fired, plan_sha256,
+  details}` echoed into every record, all four modes.
+- agents.py `TOOL_CAP_EXHAUSTED` (2026-08-01 follow-up) — distinct
+  extraction_error at tool-cap with tools still requested.
+- tests/test_injection.py (§8); label-isolation extended to `injection.py`.
+
+Gate: every §10 box green; 167 passed, 2 skipped (Layer-2 live smoke,
+skip-if-unconfigured).
+
+### Independent validation (2026-08-01, second Claude instance, clean sandbox)
+
+Zip carried real history: `git fsck --full` clean, HEAD `c3b1d07`, tag
+`part1-frozen → e2d2bdd`, working tree clean. Gate reproduced: 167 passed +
+2 skipped; spot-check exit 0; `VERIFY OK`. Plan regeneration reproduced
+byte-identical to the committed git blob (a worktree CRLF artifact of the
+Windows checkout was ruled out against `git show HEAD:…`). Targeted reads
+confirmed every behavior the flags depend on.
+
+### Flags reviewed and CLOSED
+
+1. **Input-blind interception — APPROVED.** Validated in code: the
+   `accepted={}` context is scoped per line and fires only for the ids the
+   interception seam actually substituted
+   (`ctx = {} if lid in injected_ids else full accepted context`), so
+   non-injected records — including sibling lines in the same payload — keep
+   full-context validation, and un-injected runs are untouched. Assembly
+   failures route through the pre-existing §3.5 machinery
+   (`_route_gate_failure` → culpable owner, verbatim gate checks); no
+   injection special-casing exists anywhere in that path. This is the
+   ratified DECISION 3 reading, and it is what preserves the RQ4 probe: a
+   context-aware interception check would fire the τ-owner's own retry with
+   pinpoint feedback, collapsing the silent-error condition into a
+   measurement of the validator.
+   *Phenomenology recorded from the frozen cross-check inventory:* the EXM
+   check is one-directional (`exempt=true` on a non-EXEMPT_SUPPLY category
+   fails; `exempt=false` on an EXEMPT_SUPPLY category passes) and no check
+   requires an exempt EXM to yield outcome `exempt`; so EXM true→false and
+   RCH exempt→standard_charge injections can survive the assembly gate
+   (silent, detectable only downstream), while EXM false→true,
+   RCH standard→reverse and RCH reverse→exempt are caught at assembly and
+   repaired through the natural path. This asymmetry is the §6.4 mechanism
+   ("especially when τ is the terminal subtask RCH"), not a defect.
+2. **standard_charge RCH citation — RESOLVED as path-aware; plan unchanged.**
+   The generator now selects the citation by the case's oracle `jur_path`
+   (domestic → `RC.DOMESTIC.SUPPLIER_CHARGES`, b2c_cross_border →
+   `RC.B2C.SUPPLIER_CHARGES`; intra-EU cannot reach the branch for the
+   frozen corpus — standard_charge injections arise only from oracle-exempt
+   first lines, and no exempt line occurs inside an intra-EU B2B case,
+   SPOTCHECK_3.3 §4.2 — so the domestic key is the total-function default).
+   Measured against the committed plan, the flagged branch is unpopulated
+   under seed 20260801: zero standard_charge injections exist, so the
+   correction is a zero-delta change — regeneration remains byte-identical
+   and `content_sha256 1b3c3b77…` stands. The fix hardens the released
+   generator against future seeds/corpora rather than altering this
+   experiment.
+
+Guardrails honored (§9 + L1 §11 + L2 §9): one mode per run, never combined;
+controller is stdlib-only, so the validated Layer-2 import graph is
+untouched; no controller state enters agent-visible content except the
+injected record itself (the intended exception); the plan is written only by
+the generator; zero edits under the frozen trees.
+
+Informational, no action: the uniform τ draw yields EXM = 4 — a small cell
+for any per-τ breakdown. §6.4's reported metrics aggregate per (injection,
+configuration) cell over τ, so nothing in the paper's analysis plan is
+affected; noted for results reading.
+
+Next: Layer 4 (sweep runner) + the five-case dry run at the Layer-3/4
+boundary. Prerequisites now: a configured `ANTHROPIC_API_KEY` (turns the two
+live smokes from skipped to passed) and the VM decision for the measured
+sweep.
+
 ## 2026-08-01 — Part 2, Layer 2 (orchestration) implemented; gate green; flags reviewed and closed
 
 Layer-2 source of truth: HARNESS_GROUNDING_2_ORCHESTRATION.md v1.1. Built on the
