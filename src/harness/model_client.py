@@ -59,7 +59,8 @@ class ExecutionConstants:
 
     model: str = "claude-haiku-4-5-20251001"
     temperature: float = 0.2                     # paper §4.6 (committed)
-    top_p: float = 0.95                          # paper §4.6 (committed)
+    top_p: Optional[float] = None                # §4.6 amended 2026-08-02: unset
+                                                 # (model rejects temp+top_p); echoed as null
     max_tokens: int = 4096                       # DECISION 4
     timeout_s: int = 120                         # DECISION 4 (per model call)
     case_wall_cap_s: int = 1200                  # DECISION 4 (safety)
@@ -357,10 +358,14 @@ class AnthropicModelClient:
         kwargs: dict[str, Any] = {
             "model": self._c.model,
             "max_tokens": self._c.max_tokens,
-            "temperature": self._c.temperature,
-            "top_p": self._c.top_p,
             "messages": msg_list,
         }
+        # §4.6 amendment (2026-08-02): the pinned model rejects specifying both
+        # sampling parameters, so emit each only when set. top_p is unset (None).
+        if self._c.temperature is not None:
+            kwargs["temperature"] = self._c.temperature
+        if self._c.top_p is not None:
+            kwargs["top_p"] = self._c.top_p
         if system_text:
             kwargs["system"] = system_text
         if tool_defs:

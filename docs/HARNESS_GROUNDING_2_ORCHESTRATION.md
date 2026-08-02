@@ -5,6 +5,15 @@ design decisions marked **[DECISION n]** were **ratified on 2026-07-31** (§12);
 Decision 1's author check was resolved by a full-paper read the same day
 (§3.1). Implementation may begin once Layer 1 passes its readiness gate.
 
+> **Amended 2026-08-02:** the §1 sampling pin is temperature = 0.2 only;
+> `top_p` is unset (echoed as `null` in run records). The pinned model's
+> API rejects specifying both sampling parameters (400: "temperature and
+> top_p cannot both be specified"), surfaced by the first live smoke with
+> $0 spent and zero runs produced. Temperature is the operative
+> low-variance control; at T = 0.2 a 0.95 nucleus cut is behaviorally
+> near-inert, so the intended regime is preserved. Ratified by the author;
+> paper §4.6 amended to match. No run ever used the old pair.
+
 **SOURCE OF TRUTH for Part 2, Layer 2.** Claude Code reads this before touching
 any Layer-2 code. Authority order:
 
@@ -53,7 +62,7 @@ Module: `src/harness/model_client.py` exposes a single frozen constants object
 |---|---|---|
 | `model` | `claude-haiku-4-5-20251001` | pinned (research pass 2026-06-24) |
 | `temperature` | `0.2` | paper §4.6 (committed, not open) |
-| `top_p` | `0.95` | paper §4.6 (committed, not open) |
+| `top_p` | unset — see amendment note | paper §4.6, amended 2026-08-02 (was `0.95`; model rejects temp+top_p) |
 | `max_tokens` (per call) | `4096` | **[DECISION 4]** |
 | `timeout_s` (per model call) | `120` | **[DECISION 4]** |
 | `case_wall_cap_s` (safety) | `1200` | **[DECISION 4]** |
@@ -411,5 +420,6 @@ results.
    function calling for tools.
 4. **[DECISION 4] Pin-list completion:** `max_tokens 4096`, per-call timeout
    120 s, case wall cap 1200 s, transport retries 3 with 2/4/8 s backoff
-   (logged as infrastructure). (`temperature 0.2` / `top-p 0.95` are the
-   paper's §4.6 commitments, restated, not open.)
+   (logged as infrastructure). (`temperature 0.2` is the paper's §4.6
+   commitment, restated, not open; `top_p` is unset per the 2026-08-02
+   amendment note above.)

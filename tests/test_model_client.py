@@ -25,7 +25,7 @@ class TestExecutionConstants:
         c = EXECUTION_CONSTANTS
         assert c.model == "claude-haiku-4-5-20251001"
         assert c.temperature == 0.2
-        assert c.top_p == 0.95
+        assert c.top_p is None  # §4.6 amended 2026-08-02: top_p unset (echoed null)
         assert c.max_tokens == 4096
         assert c.timeout_s == 120
         assert c.case_wall_cap_s == 1200
