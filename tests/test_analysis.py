@@ -38,6 +38,17 @@ class TestPrimitives:
         d = np.array([0.1, -0.2, 0.3, 0.4, -0.1])
         assert analyze.bootstrap_ci(d) == analyze.bootstrap_ci(d)  # pinned seed → identical
 
+    def test_sampled_permutation_addone_never_zero(self):
+        # k=16 forces the sampled branch (2^16 > 2^14). Strongly one-sided
+        # diffs: p must be >= 1/(1+B) and deterministic under the pinned seed.
+        diffs = np.arange(1.0, 17.0)
+        p1 = analyze.permutation_p(diffs)
+        p2 = analyze.permutation_p(diffs)
+        assert p1 == p2
+        assert p1 >= 1.0 / (1 + analyze.N_PERMUTATION)
+        # zeros: every permutation ties the observed mean -> p == 1 exactly.
+        assert analyze.permutation_p(np.zeros(16)) == pytest.approx(1.0)
+
     def test_holm_ordering_on_constructed_pset(self):
         h = analyze.holm_bonferroni({"a": 0.01, "b": 0.04, "c": 0.02, "d": 0.5})
         # sorted 0.01,0.02,0.04,0.5 → ×4,×3,×2,×1 = 0.04,0.06,0.08,0.5 (monotone)
@@ -47,34 +58,99 @@ class TestPrimitives:
         assert h["d"]["holm_adjusted"] == pytest.approx(0.5) and h["d"]["reject"] is False
 
 
-class TestFalsificationMechanism:
-    def test_criteria_evaluate_from_constructed_contrasts(self):
-        # Construct contrast outcomes; the criteria evaluate per expect_material.
-        contrasts = {
-            "C2_vs_C1": {"material_positive": True, "mean_diff": 0.3, "ci_low": 0.1,
-                         "ci_high": 0.5, "cohen_dz": 0.9},
-            "C1_vs_C4": {"material_positive": False, "mean_diff": 0.0, "ci_low": -0.1,
-                         "ci_high": 0.1, "cohen_dz": 0.05},
-            "S0primeC2_vs_C2": {"material_positive": False, "mean_diff": -0.2, "ci_low": -0.4,
-                                "ci_high": 0.0, "cohen_dz": -0.6},
-        }
-        table = analyze.evaluate_falsification(contrasts)
-        met = dict(zip(table["criterion"], table["met"]))
-        # decomposition_improves (expects material+ True) → met; the other two
-        # (expect material+ False) → met because observed material+ is False.
-        assert met["decomposition_improves_over_monolith"] is True
-        assert met["right_sizing_not_monotone_finer"] is True
-        assert met["structural_not_budget"] is True
+def _cl_fixture(cond_acc_tok: dict[str, tuple[list[float], list[float]]],
+                s0prime_c2: tuple[list[float], list[float]] | None = None) -> pd.DataFrame:
+    """Build a case_level frame directly: 4 cases per condition, phase per
+    analyze._CONDITION_PHASE, mode 'none'."""
+    rows = []
+    def add(cond, phase, accs, toks):
+        for i, (a, t) in enumerate(zip(accs, toks), 1):
+            rows.append(dict(phase=phase, mode="none", condition=cond,
+                             case_id=f"eval_{i:03d}", acc=a, tokens=t, latency_ms=1.0))
+    for cond, (accs, toks) in cond_acc_tok.items():
+        add(cond, 1, accs, toks)
+    if s0prime_c2 is not None:
+        add(sc.S0PRIME_C2, 2, *s0prime_c2)
+    return pd.DataFrame(rows)
 
-    def test_criterion_flips_when_material(self):
-        contrasts = {"C2_vs_C1": {"material_positive": False},
-                     "C1_vs_C4": {"material_positive": True},
-                     "S0primeC2_vs_C2": {"material_positive": True}}
-        table = analyze.evaluate_falsification(contrasts)
-        met = dict(zip(table["criterion"], table["met"]))
-        assert met["decomposition_improves_over_monolith"] is False   # no material gain
-        assert met["right_sizing_not_monotone_finer"] is False        # C4 materially beats C1
-        assert met["structural_not_budget"] is False                  # budget artefact
+
+def _c(material: bool, n: int = 4, ci=(0.1, 0.5), holm_reject=None, mean_diff=0.3):
+    d = {"material_positive": material, "n": n, "ci_low": ci[0], "ci_high": ci[1],
+         "mean_diff": mean_diff, "cohen_dz": 0.9 if material else 0.05}
+    if holm_reject is not None:
+        d["holm_reject"] = holm_reject
+    return d
+
+
+class TestFalsificationMechanism:
+    """§6.6, faithfully: the three criteria on constructed outcomes."""
+
+    def test_rq1_supported_via_c3_nonmonotonic(self):
+        cl = _cl_fixture({"S0": ([0.2]*4, [100]*4), "C1": ([0.2]*4, [100]*4),
+                          "C2": ([0.4]*4, [100]*4), "C3": ([0.9]*4, [100]*4),
+                          "C4": ([0.3]*4, [100]*4)})
+        cbn = {"C2_vs_C1": _c(False), "C2_vs_C4": _c(False),
+               "C3_vs_C1": _c(True), "C3_vs_C4": _c(True)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert t.loc["intermediate_optimum_RQ1", "triggered"] == False
+
+    def test_rq1_triggered_when_no_intermediate_beats_both(self):
+        cl = _cl_fixture({"S0": ([0.2]*4, [100]*4), "C1": ([0.2]*4, [100]*4),
+                          "C2": ([0.4]*4, [100]*4), "C3": ([0.9]*4, [100]*4),
+                          "C4": ([0.3]*4, [100]*4)})
+        cbn = {"C2_vs_C1": _c(True), "C2_vs_C4": _c(False),
+               "C3_vs_C1": _c(True), "C3_vs_C4": _c(False)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert t.loc["intermediate_optimum_RQ1", "triggered"] == True
+
+    def test_rq1_auto_triggered_on_monotonic_sequence(self):
+        # C3 materially beats both, but C1..C4 accuracy is monotone increasing
+        # -> §6.6(1) "automatically unmet".
+        cl = _cl_fixture({"S0": ([0.1]*4, [100]*4), "C1": ([0.2]*4, [100]*4),
+                          "C2": ([0.4]*4, [100]*4), "C3": ([0.6]*4, [100]*4),
+                          "C4": ([0.8]*4, [100]*4)})
+        cbn = {"C2_vs_C1": _c(False), "C2_vs_C4": _c(False),
+               "C3_vs_C1": _c(True), "C3_vs_C4": _c(True)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert analyze.accuracy_sequence_monotonic(cl) is True
+        assert t.loc["intermediate_optimum_RQ1", "triggered"] == True
+
+    def test_rq2_pareto_dominance_with_tie_triggers(self):
+        # S0 ties C1 on both axes and strictly beats the rest -> weak dominance.
+        cl = _cl_fixture({"S0": ([0.8]*4, [100]*4), "C1": ([0.8]*4, [100]*4),
+                          "C2": ([0.7]*4, [120]*4), "C3": ([0.6]*4, [130]*4),
+                          "C4": ([0.5]*4, [140]*4)})
+        t = analyze.evaluate_falsification(cl, {}).set_index("criterion")
+        assert analyze.s0_weakly_pareto_dominates_all(cl) is True
+        assert t.loc["orchestration_benefit_RQ2", "triggered"] == True
+
+    def test_rq2_not_triggered_when_any_axis_worse(self):
+        # S0 more accurate everywhere but costlier than C2 -> no dominance.
+        cl = _cl_fixture({"S0": ([0.9]*4, [110]*4), "C1": ([0.8]*4, [120]*4),
+                          "C2": ([0.7]*4, [90]*4), "C3": ([0.6]*4, [130]*4),
+                          "C4": ([0.5]*4, [140]*4)})
+        t = analyze.evaluate_falsification(cl, {}).set_index("criterion")
+        assert t.loc["orchestration_benefit_RQ2", "triggered"] == False
+
+    def test_rq3_conjunction(self):
+        cl = _cl_fixture({"S0": ([0.5]*4, [100]*4), "C1": ([0.5]*4, [100]*4),
+                          "C2": ([0.5]*4, [100]*4), "C3": ([0.5]*4, [100]*4),
+                          "C4": ([0.5]*4, [100]*4)})
+        # not significant + CI spans zero -> triggered
+        cbn = {"S0primeC2_vs_C2": _c(False, ci=(-0.1, 0.1), holm_reject=False, mean_diff=0.0)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert t.loc["prompt_budget_confound_RQ3", "triggered"] == True
+        # significant -> not triggered even if CI spans zero is impossible; use excl.
+        cbn = {"S0primeC2_vs_C2": _c(True, ci=(0.05, 0.3), holm_reject=True)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert t.loc["prompt_budget_confound_RQ3", "triggered"] == False
+        # not significant but CI excludes zero -> not triggered (conjunction).
+        cbn = {"S0primeC2_vs_C2": _c(False, ci=(0.02, 0.3), holm_reject=False)}
+        t = analyze.evaluate_falsification(cl, cbn).set_index("criterion")
+        assert t.loc["prompt_budget_confound_RQ3", "triggered"] == False
+        # phase 2 absent -> undeterminable (None).
+        t = analyze.evaluate_falsification(cl, {}).set_index("criterion")
+        assert t.loc["prompt_budget_confound_RQ3", "triggered"] is None
 
 
 def _tiny_scored():
@@ -103,7 +179,20 @@ def _tiny_scored():
 class TestBuildAnalysis:
     def test_tables_and_hand_values(self):
         tables = analyze.build_analysis(_tiny_scored())
-        assert set(tables) == {"case_level", "headline_contrasts", "injection_cells", "falsification"}
+        assert set(tables) == {"case_level", "headline_contrasts", "supplementary_contrasts",
+                               "injection_cells", "falsification"}
+        fal = tables["falsification"].set_index("criterion")
+        assert list(fal.index) == ["intermediate_optimum_RQ1", "orchestration_benefit_RQ2",
+                                   "prompt_budget_confound_RQ3"]
+        # tiny fixture has no C3 -> RQ1 undeterminable (missing contrasts);
+        # RQ2 is definitively False: C1 already defeats S0 dominance on accuracy,
+        # so the missing C3 cannot change the verdict (early definitive exit).
+        assert fal.loc["intermediate_optimum_RQ1", "triggered"] is None
+        assert fal.loc["orchestration_benefit_RQ2", "triggered"] == False
+        supp = tables["supplementary_contrasts"].set_index("name")
+        assert list(supp.index) == ["C2_vs_C4", "C3_vs_C1", "C3_vs_C4"]
+        # C2 [1,1,1,1] − C4 [1,0,0,1] -> diffs [0,1,1,0], mean 0.5
+        assert supp.loc["C2_vs_C4", "mean_diff"] == pytest.approx(0.5)
 
         hc = tables["headline_contrasts"].set_index("name")
         # S0 case accs [0,0,0,1]; C1 [1,1,0,1] → diffs [-1,-1,0,0], mean −0.5

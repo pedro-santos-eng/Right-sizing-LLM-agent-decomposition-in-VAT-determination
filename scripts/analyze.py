@@ -11,13 +11,19 @@ Pins (DECISION 4): bootstrap_seed 20260805, permutation_seed 20260806,
 four named headline tests, Mann–Whitney descriptive only, §6.4 cell metrics,
 mechanical §6.6 criteria, NO p95/p99 latency.
 
-FLAG for review (bounded interpretation, §6.6): the paper's §6.6 falsification
-criteria are not rendered in the repo. They are implemented here as three named,
-editable constants (``FALSIFICATION_CRITERIA``) expressed through the ratified
-materiality rule (CI excludes zero in the hypothesised direction AND
-|d_z| ≥ 0.2) over the named contrasts. The MECHANISM is tested; the exact
-scientific wording/direction of each criterion must be confirmed against paper
-§6.6 before any reported falsification claim.
+REVIEWED 2026-08-02 (flag resolved): the three §6.6 falsification criteria are
+rendered faithfully in ``evaluate_falsification``: (1) intermediate-optimum
+granularity — triggered iff neither C2 nor C3 materially outperforms BOTH
+endpoints C1 and C4 on accuracy, or the C1–C4 accuracy sequence is monotonic
+in either direction (automatic); (2) orchestration benefit — triggered iff S0
+weakly Pareto-dominates all of C1–C4 on the (token cost, accuracy) point
+estimates; (3) prompt-budget confound — triggered iff the S0'_C2 vs C2
+permutation test is not significant under Holm AND its bootstrap CI includes
+zero. The three supplementary accuracy contrasts this requires (C2–C4, C3–C1,
+C3–C4) are descriptive, outside the Holm family (§6.5). Sampled permutation p
+uses the (1+hits)/(1+B) estimator (Phipson & Smyth 2010), so a reported p is
+never zero; the exact-enumeration branch already contains the identity
+permutation.
 """
 
 from __future__ import annotations
@@ -54,6 +60,17 @@ HEADLINE_FAMILY: tuple[tuple[str, str, str], ...] = (
     ("C2_vs_C1", "C2", "C1"),
     ("S0primeC2_vs_C2", sc.S0PRIME_C2, "C2"),
 )
+
+# Supplementary accuracy contrasts required by §6.6(1); descriptive, OUTSIDE the
+# Holm family (§6.5: "All other comparisons ... reported descriptively outside
+# the corrected family").
+SUPPLEMENTARY_CONTRASTS: tuple[tuple[str, str, str], ...] = (
+    ("C2_vs_C4", "C2", "C4"),
+    ("C3_vs_C1", "C3", "C1"),
+    ("C3_vs_C4", "C3", "C4"),
+)
+
+GRANULARITY_ORDER: tuple[str, ...] = ("C1", "C2", "C3", "C4")
 
 # Which phase supplies each condition's un-injected (mode none) case-level data.
 _CONDITION_PHASE = {
@@ -104,7 +121,8 @@ def permutation_p(diffs: np.ndarray, seed: int = PERMUTATION_SEED,
     rng = np.random.default_rng(seed)
     signs = rng.choice((-1.0, 1.0), size=(n, k))
     perm_means = np.abs((signs * diffs).mean(axis=1))
-    return float(np.mean(perm_means >= observed - tol))
+    # (1 + hits) / (1 + B): Phipson & Smyth (2010); never returns exactly 0.
+    return float((1 + int(np.sum(perm_means >= observed - tol))) / (1 + n))
 
 
 def cohen_dz(diffs: np.ndarray) -> float:
@@ -218,46 +236,130 @@ def contrast(cl: pd.DataFrame, a: str, b: str, metric: str = "acc") -> dict:
 
 
 # ---------------------------------------------------------------------------
-# §6.6 falsification criteria (FLAGGED — mechanical, wording pending review).
-# Each maps to a named headline contrast + hypothesised direction. "met" uses
-# the ratified materiality rule via the contrast's material_positive/direction.
+# §6.6 falsification criteria — faithful rendering (reviewed 2026-08-02).
+# Each row reports whether the paper's falsifying condition is TRIGGERED, the
+# verdict sentence §6.6 attaches to it, and the supporting evidence.
 # ---------------------------------------------------------------------------
 
-FALSIFICATION_CRITERIA = (
-    {"name": "decomposition_improves_over_monolith", "contrast": "C2_vs_C1",
-     "expect_material_positive": True,
-     "desc": "Some orchestrated decomposition materially beats the single-worker "
-             "baseline (C2 > C1). Not met ⇒ decomposition provides no benefit."},
-    {"name": "right_sizing_not_monotone_finer", "contrast": "C1_vs_C4",
-     "expect_material_positive": False,
-     "desc": "Finest decomposition (C4) does NOT materially beat coarse (C1) — "
-             "an interior optimum, not 'finer is always better'. Met (i.e. C1−C4 "
-             "not materially negative) supports right-sizing."},
-    {"name": "structural_not_budget", "contrast": "S0primeC2_vs_C2",
-     "expect_material_positive": False,
-     "desc": "Matched-token monolith S0′_C2 does NOT materially beat C2 — the "
-             "benefit is structural, not a token-budget artefact."},
-)
+
+def _condition_point(cl: pd.DataFrame, condition: str, metric: str) -> float:
+    """Point estimate: mean of the case-level summaries (§6.6 comparisons on
+    main-sweep conditions are descriptive point estimates)."""
+    s = _condition_case_series(cl, condition, metric)
+    return float(s.mean()) if len(s) else float("nan")
 
 
-def evaluate_falsification(contrast_by_name: dict[str, dict]) -> pd.DataFrame:
+def accuracy_sequence_monotonic(cl: pd.DataFrame, tol: float = 1e-12):
+    """§6.6(1): "If the C1–C4 accuracy sequence is monotonic in either
+    direction, this criterion is automatically unmet." Weak monotonicity over
+    the point estimates; None if any condition is absent."""
+    vals = [_condition_point(cl, c, "acc") for c in GRANULARITY_ORDER]
+    if any(np.isnan(v) for v in vals):
+        return None
+    nondec = all(b >= a - tol for a, b in zip(vals, vals[1:]))
+    noninc = all(b <= a + tol for a, b in zip(vals, vals[1:]))
+    return bool(nondec or noninc)
+
+
+def s0_weakly_pareto_dominates_all(cl: pd.DataFrame, tol: float = 1e-12):
+    """§6.6(2): S0 weakly Pareto-dominates a configuration iff it is no worse
+    on BOTH axes — accuracy no lower AND token cost no higher — on the
+    main-sweep point estimates. Triggered iff this holds against every one of
+    C1–C4. None if any condition is absent."""
+    acc0 = _condition_point(cl, "S0", "acc")
+    tok0 = _condition_point(cl, "S0", "tokens")
+    if np.isnan(acc0) or np.isnan(tok0):
+        return None
+    any_missing = False
+    for ci in GRANULARITY_ORDER:
+        a = _condition_point(cl, ci, "acc")
+        t = _condition_point(cl, ci, "tokens")
+        if np.isnan(a) or np.isnan(t):
+            any_missing = True          # undeterminable UNLESS a definitive
+            continue                    # failure appears elsewhere
+        if not (acc0 >= a - tol and tok0 <= t + tol):
+            return False                # definitive, order-independent
+    return None if any_missing else True
+
+
+def _material(contrast_by_name: dict[str, dict], name: str) -> bool:
+    return bool(contrast_by_name.get(name, {}).get("material_positive", False))
+
+
+def evaluate_falsification(cl: pd.DataFrame,
+                           contrast_by_name: dict[str, dict]) -> pd.DataFrame:
+    """The three pre-stated §6.6 criteria, evaluated mechanically. "Materially
+    outperforms" is the ratified rule carried by ``contrast``: bootstrap CI
+    excludes zero in the positive direction AND d_z ≥ 0.2."""
     rows = []
-    for crit in FALSIFICATION_CRITERIA:
-        c = contrast_by_name.get(crit["contrast"], {})
-        material_pos = bool(c.get("material_positive", False))
-        met = material_pos if crit["expect_material_positive"] else (not material_pos)
-        rows.append({
-            "criterion": crit["name"],
-            "contrast": crit["contrast"],
-            "expect_material_positive": crit["expect_material_positive"],
-            "observed_material_positive": material_pos,
-            "met": met,
-            "mean_diff": c.get("mean_diff"),
-            "ci_low": c.get("ci_low"),
-            "ci_high": c.get("ci_high"),
-            "cohen_dz": c.get("cohen_dz"),
-            "description": crit["desc"],
-        })
+
+    # (1) Intermediate-optimum granularity (RQ1).
+    m21 = _material(contrast_by_name, "C2_vs_C1")
+    m24 = _material(contrast_by_name, "C2_vs_C4")
+    m31 = _material(contrast_by_name, "C3_vs_C1")
+    m34 = _material(contrast_by_name, "C3_vs_C4")
+    intermediate_beats_both = (m21 and m24) or (m31 and m34)
+    monotonic = accuracy_sequence_monotonic(cl)
+    have_all = all(contrast_by_name.get(k, {}).get("n", 0) > 0
+                   for k in ("C2_vs_C1", "C2_vs_C4", "C3_vs_C1", "C3_vs_C4"))
+    trig1 = (None if (not have_all or monotonic is None)
+             else bool((not intermediate_beats_both) or monotonic))
+    rows.append({
+        "criterion": "intermediate_optimum_RQ1",
+        "triggered": trig1,
+        "verdict": ("intermediate-optimum hypothesis unsupported for this workload"
+                    if trig1 else
+                    "an intermediate configuration materially outperforms both endpoints"
+                    if trig1 is False else "undeterminable (missing conditions)"),
+        "evidence": (f"C2>C1={m21}, C2>C4={m24}, C3>C1={m31}, C3>C4={m34}, "
+                     f"monotonic_C1..C4={monotonic}"),
+        "paper_rule": ("§6.6(1): triggered iff neither C2 nor C3 materially "
+                       "outperforms both C1 and C4 on final-answer accuracy, or "
+                       "the C1–C4 accuracy sequence is monotonic (automatic)."),
+    })
+
+    # (2) Orchestration benefit (RQ2).
+    dom = s0_weakly_pareto_dominates_all(cl)
+    pts = {c: (round(_condition_point(cl, c, "acc"), 6),
+               round(_condition_point(cl, c, "tokens"), 3))
+           for c in ("S0",) + GRANULARITY_ORDER}
+    rows.append({
+        "criterion": "orchestration_benefit_RQ2",
+        "triggered": dom,
+        "verdict": ("orchestrated multi-worker hypothesis unsupported for this workload"
+                    if dom else
+                    "S0 does not weakly Pareto-dominate all of C1–C4"
+                    if dom is False else "undeterminable (missing conditions)"),
+        "evidence": f"(acc, tokens) points: {pts}",
+        "paper_rule": ("§6.6(2): triggered iff S0 weakly Pareto-dominates all of "
+                       "C1–C4 on the token-cost/final-answer-accuracy plane "
+                       "(main-sweep point estimates)."),
+    })
+
+    # (3) Prompt-budget confound (RQ3).
+    c = contrast_by_name.get("S0primeC2_vs_C2", {})
+    if c.get("n", 0):
+        ci_spans_zero = bool(c["ci_low"] <= 0.0 <= c["ci_high"])
+        not_significant = not bool(c.get("holm_reject", False))
+        trig3 = bool(not_significant and ci_spans_zero)
+        ev = (f"holm_reject={c.get('holm_reject')}, "
+              f"ci=[{c['ci_low']:.6g}, {c['ci_high']:.6g}], "
+              f"mean_diff={c.get('mean_diff'):.6g}")
+    else:
+        trig3, ev = None, "S0primeC2_vs_C2 contrast unavailable (n=0)"
+    rows.append({
+        "criterion": "prompt_budget_confound_RQ3",
+        "triggered": trig3,
+        "verdict": ("any C2 main-sweep advantage is reported as consistent with a "
+                    "prompt-budget explanation" if trig3 else
+                    "the matched-token comparison distinguishes C2 from S0'_C2"
+                    if trig3 is False else "undeterminable (phase 2 absent)"),
+        "evidence": ev,
+        "paper_rule": ("§6.6(3): triggered iff the S0'_C2 vs C2 accuracy "
+                       "difference is not significant under the paired "
+                       "permutation test with Holm–Bonferroni correction AND its "
+                       "paired bootstrap CI includes zero."),
+    })
     return pd.DataFrame(rows)
 
 
@@ -315,11 +417,20 @@ def build_analysis(scored: pd.DataFrame) -> dict[str, pd.DataFrame]:
         row["holm_adjusted"] = h.get("holm_adjusted")
         row["holm_reject"] = h.get("reject")
 
+    # §6.6(1) supplementary accuracy contrasts — descriptive, no Holm columns.
+    supplementary_rows = []
+    for name, a, b in SUPPLEMENTARY_CONTRASTS:
+        c = contrast(cl, a, b, metric="acc")
+        c["name"] = name
+        contrast_by_name[name] = c
+        supplementary_rows.append(c)
+
     return {
         "case_level": cl,
         "headline_contrasts": pd.DataFrame(contrast_rows),
+        "supplementary_contrasts": pd.DataFrame(supplementary_rows),
         "injection_cells": injection_cells(scored),
-        "falsification": evaluate_falsification(contrast_by_name),
+        "falsification": evaluate_falsification(cl, contrast_by_name),
     }
 
 
