@@ -40,6 +40,7 @@ from src.harness.prompts import (
     ROLE_PREAMBLE,
     SUBTASK_INSTRUCTIONS,
     TOOL_USE_RULES,
+    final_contract,
     ordered_assigned,
     output_contract,
 )
@@ -128,6 +129,7 @@ def assemble_s0_prompt(knobs: S0Knobs = S0Knobs()) -> str:
         '"cls": <record>, "rat": <record>, "exm": <record>, "rch": <record>}, '
         '...], "final": <aggregation block>}. Produce every record and the final '
         "block yourself.",
+        final_contract(),
     ]
     return "\n".join(sections)
 

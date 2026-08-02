@@ -172,6 +172,37 @@ def output_contract(subtask: str) -> str:
     )
 
 
+def _object_contract(label: str, def_name: str) -> str:
+    """Render an object contract (required keys, optional keys, closed-set) FROM
+    the frozen schema $defs — same generate-not-copy mechanism as
+    ``output_contract`` (§4, §10)."""
+    d = _defs()[def_name]
+    props = d.get("properties", {})
+    required = d.get("required", [])
+
+    def describe(k: str) -> str:
+        spec = props.get(k, {})
+        if "enum" in spec:
+            return f'{k} (one of: {", ".join(json.dumps(v) for v in spec["enum"])})'
+        if "$ref" in spec:
+            return f"{k} (the {k.upper()} record)"
+        typ = spec.get("type", "any")
+        typ_s = "|".join(typ) if isinstance(typ, list) else str(typ)
+        return f"{k} ({typ_s})"
+
+    req_s = "; ".join(describe(k) for k in required)
+    optional = [k for k in props if k not in required]
+    opt_s = f" Optional: {'; '.join(describe(k) for k in optional)}." if optional else ""
+    closed = " Emit no other keys." if d.get("additionalProperties") is False else ""
+    return f'"{label}": an object whose required keys are: {req_s}.{opt_s}{closed}'
+
+
+def final_contract() -> str:
+    """The ``final`` aggregation-block contract, generated from the schema $defs.
+    Public so ``s0.py`` reuses the identical rendering (§4, §6)."""
+    return _object_contract("final", "final")
+
+
 # ---------------------------------------------------------------------------
 # Bundle emission contract — the worker emits ONE JSON object covering its whole
 # assigned bundle (grounding §3.2). Per-line subtasks appear under "lines" keyed
@@ -190,19 +221,20 @@ def _bundle_contract(assigned: frozenset[str]) -> str:
         "records for the subtasks you own:"
     )
     if per_line:
-        keys = ", ".join(t.lower() for t in per_line)
+        keys = ", ".join(f'"{t.lower()}"' for t in per_line)
         lines.append(
-            f'  - "lines": an array with one entry per line item, each '
-            f'{{"line_id": <id>, {keys}: <record> ...}} carrying your per-line '
-            f"records ({', '.join(per_line)})."
+            f'  - "lines": an array with exactly one entry per line item. Each '
+            f'entry is an object with keys "line_id" (the line id) and {keys} — '
+            f'one record per owned per-line subtask ({", ".join(per_line)}). Every '
+            f"listed key is required on every line; emit no line without all of them."
         )
     if "JUR" in assigned:
         lines.append('  - "jur": your single case-level JUR record.')
     if "RCH" in assigned:
         lines.append(
-            '  - "final": the case-level aggregation block (currency, '
-            "total_vat_amount, and a per-line summary). You must produce this "
-            "yourself; it is not computed for you."
+            "  - " + final_contract()
+            + ' Each "lines" entry summarises one line item. You must produce this '
+            "block yourself; it is not computed for you."
         )
     return "\n".join(lines)
 
