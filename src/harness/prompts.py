@@ -37,6 +37,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
+from src.oracle.rules import RULE_KEYS
 from src.harness.surface import (
     EXEMPTION_TABLE_TEXT,
     PARTITIONS,
@@ -158,6 +159,21 @@ def _render_decision_fields(decision_schema: dict) -> str:
     return "; ".join(parts)
 
 
+# Closed citation vocabulary per subtask, derived from the frozen rule table
+# (rules.RULE_KEYS) by namespace — GENERATED, never hand-listed (§4, §10). The
+# 2026-08-02 diagnostic showed workers inventing keys off table-reference
+# wording ('R', 'EXM.TABLE_R', …) because the contract never stated the closed
+# set. Enumerating it is the same conformance class as the schema-generated
+# decision enums; citation–DECISION consistency (V4) remains fully measured.
+_CITATION_PREFIX: dict[str, str] = {
+    "CLS": "CLS.", "JUR": "JUR.", "RAT": "RATE.", "EXM": "EXM.", "RCH": "RC.",
+}
+
+
+def _citation_keys(subtask: str) -> list[str]:
+    return sorted(k for k in RULE_KEYS if k.startswith(_CITATION_PREFIX[subtask]))
+
+
 def output_contract(subtask: str) -> str:
     """The emitted-record contract for one subtask, GENERATED from the schema
     $defs (never hand-copied — §4, §10). Shape is {subtask, decision, support,
@@ -165,10 +181,11 @@ def output_contract(subtask: str) -> str:
     entry = _defs()[_SUBTASK_DEF[subtask]]
     decision = entry["properties"]["decision"]
     fields = _render_decision_fields(decision)
+    keys = ", ".join(f'"{k}"' for k in _citation_keys(subtask))
     return (
         f"{subtask} record: an object with keys subtask (== \"{subtask}\"), "
         f"decision {{{fields}}}, support (object of the inputs you consumed), and "
-        f"rule_reference (a citation key)."
+        f"rule_reference (exactly one of: {keys})."
     )
 
 

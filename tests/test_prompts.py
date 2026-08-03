@@ -84,3 +84,28 @@ class TestHashStabilityAcrossProcesses:
         assert out.returncode == 0, out.stderr
         other = json.loads(out.stdout.strip().splitlines()[-1])
         assert other == all_partition_prompt_hashes()
+
+from src.harness import prompts
+
+
+class TestCitationVocabulary:
+    """Ratified 2026-08-02: contracts enumerate the closed citation set,
+    generated from rules.RULE_KEYS by namespace."""
+
+    def test_exm_contract_lists_exactly_the_closed_keys(self):
+        c = prompts.output_contract("EXM")
+        assert '"EXM.NONE"' in c and '"EXM.EXEMPT_SUPPLY"' in c
+        assert "exactly one of:" in c
+        # nothing outside the namespace leaks in
+        assert "RATE." not in c and "RC." not in c and "JUR." not in c
+
+    def test_every_subtask_vocabulary_is_nonempty_and_namespaced(self):
+        from src.oracle.rules import RULE_KEYS
+        for tau, prefix in prompts._CITATION_PREFIX.items():
+            keys = prompts._citation_keys(tau)
+            assert keys, tau
+            assert all(k.startswith(prefix) for k in keys)
+            assert set(keys) <= set(RULE_KEYS)
+        # the five namespaces partition the whole closed set
+        all_keys = {k for t in prompts._CITATION_PREFIX for k in prompts._citation_keys(t)}
+        assert all_keys == set(RULE_KEYS)
