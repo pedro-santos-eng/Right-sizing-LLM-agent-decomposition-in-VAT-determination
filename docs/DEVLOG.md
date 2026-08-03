@@ -1,5 +1,99 @@
 # Development Log
 
+## 2026-08-03 — Go-live Phase 0: six harness amendments; gate-1 fail→fix→PASS; model confirmed
+
+Phase-0 dry run (L2 §11) authorized. Two attempts: attempt 1 FAILED gate 1
+(C1=0%), root-caused to a RAT instruction-completeness gap; a targeted
+completeness fix under the reopened model-choice decision produced attempt 2,
+which PASSES all three gates (C1=80%). Model claude-haiku-4-5-20251001
+CONFIRMED under the pre-committed criteria.
+
+### Ratified amendments (2026-08-02/03)
+1. §4.6 sampling (`340b115`): model rejects temperature+top_p together (400);
+   amended to temperature=0.2 only, top_p unset (echoed null). Surfaced by the
+   first live smoke at $0. Paper §4.6 amended; no run used the old pair.
+2. Prompt↔schema conformance (`1b090b4`): `final` contract schema-generated
+   (named `lines`, closed keys); explicit per-line bundle listing; S0 final
+   contract. Fixed live traces emitting `lines_summary` / omitting keys.
+3. History hygiene + translator merge (`0e72181`): heal dangling tool_use on
+   tool-cap exhaustion (else 400 on next repair); canonical same-role merge in
+   the Anthropic translator. Found via the C1 diagnostic.
+4. Citation vocabulary (`4a7357b`): record contracts enumerate the closed
+   citation set from `rules.RULE_KEYS` by namespace — workers were inventing
+   keys off table-reference wording. V4 citation–decision consistency stays
+   measured.
+5. Live smoke best-of-2 plumbing semantics (`4a7357b`): the smoke certifies
+   the pipeline, not a single stochastic draw (~80%-green process; the
+   single-draw gate was ~20% flaky by construction).
+6. RAT band←category rule (`9ad01c3`): the RAT instruction now states the
+   bounded band-from-category rule, GENERATED from `rules.CATEGORY_TABLE`.
+   This was the gate-1 root cause (below).
+
+Provenance decision (2026-08-03): the canonical prompt-hash family is
+REPO-derived. The validator sandbox never carried `1b090b4`, so its
+`5efe69a4…` expectation was computed on a pre-conformance chain and is VOID.
+Protocol: byte-sha convergence applies only to validator-delivered exact
+files; in-repo ratified code is verified by content assertions + invariants
+(C2==C3, determinism) + self-consistency; canonical hashes are the repo's,
+recorded at commit.
+
+### C1 secondary-failure diagnostic (5-sample, dev_001)
+Green 4/5; all failures REPEATED-INVALID citation-presence (EXM-dominant),
+zero omission. Motivated amendment #4. The history-hygiene bug (dangling
+tool_use) was found and fixed here (amendment #3).
+
+### Phase 0 attempt 1 (caps 5M/$10) — FAIL
+25/25 complete, 0 terminal, $0.78, 563,150 tokens.
+Accuracy: S0 40%, C1/C2/C3/C4 0%. earliest_failing_subtask {RAT: 21, JUR: 2}.
+Root cause: systematic RAT=null — the instruction required the band as a
+`rate_table_lookup` input but never stated the band←category rule, so a
+compliant "never invent" worker had no derivable path to a rate. (The frozen
+validator has no EXM↔RAT cross-check, so these wrong-but-self-consistent
+traces still validated — the exact class paper §10.4 "Validation visibility"
+already discloses.) Gate 1 FAILED (0% < 40%) → halt; model-choice decision
+reopened under pre-committed criteria: fix-and-rerun once; <40% after a
+complete surface = capability verdict; >90% = ceiling.
+
+### Completeness fix + Phase 0 attempt 2 (caps unchanged) — PASS
+Amendment #6 applied; no wording iteration.
+25/25 complete, 0 terminal, $0.48, 328,028 tokens.
+Accuracy: S0 80%, C1 80%, C2 40%, C3 100%, C4 100%. rate_ok 25/25.
+earliest_failing_subtask {RCH: 5} (residual measured behavior);
+retries 31 → 2; tokens −42%.
+
+### Gates (attempt 2)
+1. C1 accuracy ∈ [40%, 90%]: C1 = 80% → PASS → model CONFIRMED.
+2. Extraction/parse failure < 10%: 0/60 = 0.0% → PASS.
+3. Full-sweep projection (4,400 runs @ $1/$5): 51.1M in + 6.6M out ≈ $84.
+
+### Independent validation (2026-08-03, second Claude instance, clean sandbox)
+Canonical zip with full history: `git fsck` clean; the six local commits
+sit exactly on `e0d164b`; tag `part1-frozen → e2d2bdd`; working tree clean
+except the two declared untracked throwaways. Offline suite 210 passed +
+2 skipped; spot-check exit 0; `freeze_dataset --verify` OK. RAT-instruction
+content assertions pass; the canonical C2==C3 shared-slice hash reproduces
+exactly (`40ecd9610e61f4d6…`). Both Phase-0 attempts were independently
+re-scored and re-analyzed from the raw run records: every reported number
+matches — attempt-2 accuracies, rate_ok 25/25, earliest {RCH: 5}, retries 2,
+$0.48, and the $84.12 projection to the cent; attempt-1 {RAT: 21, JUR: 2},
+retries 31, 563,150 tokens, $0.78. Gate verdicts confirmed from first
+principles.
+
+### Phase re-run protocol (recorded)
+`score_runs` aggregates everything under `results/raw/`; a phase re-run must
+first archive the prior attempt OUTSIDE `results/raw/` (attempt 1 lives at
+`results/phase0_attempt1_raw/`) or records double-count. A duplicate-guard in
+`score_runs` (error on repeated (phase, mode, condition, case, repeat)) is a
+non-blocking follow-up that may ride with any future commit.
+
+### Resolution and authorization
+C1 = 80% ∈ [40, 90] → "model confirmed, proceed" branch. The gate-1 failure
+was an instruction-completeness gap, not a capability ceiling (0% → 80% on
+the fix alone). Total go-live spend: $1.26. Phase 1 NOT started — it awaits
+its own authorization and the VM decision (measured latencies belong to the
+VM per the standing principle). Batch push of the full local chain
+authorized with this close.
+
 ## 2026-08-02 — Part 2, Layer 4 close: flags reviewed; §6.6 rendered faithfully; harness COMPLETE
 
 Independent validation (second Claude instance, clean sandbox): zip with full
