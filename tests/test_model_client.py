@@ -11,6 +11,7 @@ import pytest
 from src.harness.agents import extract_payload
 from src.harness.model_client import (
     EXECUTION_CONSTANTS,
+    AnthropicModelClient,
     Message,
     ToolCall,
     make_scripted_client,
@@ -118,3 +119,46 @@ class TestExtraction:
     def test_non_object_payload_rejected(self):
         payload, err = extract_payload("```json\n[1,2,3]\n```")
         assert payload is None and "not an object" in err
+
+
+# --- §2 Anthropic translator: canonical same-role merge (ratified 2026-08-02) --
+
+
+class TestToAnthropicMerging:
+    def test_tool_round_then_repair_merges_into_one_user(self):
+        # assistant (two tool_calls) + two tool results + a repair user message
+        # → roles [user, assistant, user]; the last user carries both tool
+        # results followed by the repair text, as one message.
+        msgs = [
+            Message("user", "start"),
+            Message("assistant", "",
+                    tool_calls=(ToolCall("id1", "t1", {}), ToolCall("id2", "t2", {}))),
+            Message("tool", "r1", tool_call_id="id1", name="t1"),
+            Message("tool", "r2", tool_call_id="id2", name="t2"),
+            Message("user", "repair: re-emit"),
+        ]
+        _, out = AnthropicModelClient._to_anthropic(msgs)
+        assert [m["role"] for m in out] == ["user", "assistant", "user"]
+        last = out[-1]["content"]
+        assert [b["type"] for b in last] == ["tool_result", "tool_result", "text"]
+
+    def test_user_after_user_merges_text_blocks(self):
+        # The timeout shape produces consecutive user messages; they fuse into
+        # one user message with two text blocks.
+        msgs = [Message("user", "a"), Message("user", "b")]
+        _, out = AnthropicModelClient._to_anthropic(msgs)
+        assert len(out) == 1 and out[0]["role"] == "user"
+        assert [b["type"] for b in out[0]["content"]] == ["text", "text"]
+        assert [b["text"] for b in out[0]["content"]] == ["a", "b"]
+
+    def test_alternating_history_roles_unchanged(self):
+        msgs = [
+            Message("system", "sys"),
+            Message("user", "u1"),
+            Message("assistant", "a1"),
+            Message("user", "u2"),
+            Message("assistant", "a2"),
+        ]
+        system_text, out = AnthropicModelClient._to_anthropic(msgs)
+        assert system_text == "sys"
+        assert [m["role"] for m in out] == ["user", "assistant", "user", "assistant"]

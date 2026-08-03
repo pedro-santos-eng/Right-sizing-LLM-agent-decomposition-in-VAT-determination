@@ -171,12 +171,48 @@ class Worker:
         except TypeError:
             return {"error": "BAD_ARGUMENTS"}
 
+    # -- history hygiene ------------------------------------------------------
+
+    def _heal_dangling_tool_calls(self) -> None:
+        """Harness fix (ratified 2026-08-02): if the previous invocation ended
+        with the assistant still requesting tools — the tool-cap exhaustion
+        path returns TOOL_CAP_EXHAUSTED with the assistant ``tool_calls``
+        message already in the persistent history and no ``tool`` results —
+        then appending the next user message directly after it produces a
+        dangling ``tool_use`` block and the API rejects the request (400:
+        "tool_use ids ... without tool_result blocks"). Before ANY new user
+        message, answer every pending call with a deterministic cancellation
+        result so the history is well-formed on every exit path, present and
+        future. The cancellation payload is harness infrastructure of the same
+        class as TOOL_NOT_PERMITTED / TOOL_UNAVAILABLE and is
+        condition-invariant."""
+        if not self.history:
+            return
+        last = self.history[-1]
+        if last.role != "assistant" or not last.tool_calls:
+            return
+        for tc in last.tool_calls:
+            self.history.append(
+                Message(
+                    role="tool",
+                    content=json.dumps(
+                        {"error": "TOOL_CALL_CANCELLED",
+                         "reason": "tool iteration cap reached"},
+                        sort_keys=True,
+                        ensure_ascii=True,
+                    ),
+                    tool_call_id=tc.id,
+                    name=tc.name,
+                )
+            )
+
     # -- one invocation (initial or repair) ---------------------------------
 
     async def run(self, user_text: str) -> WorkerTurn:
         """Append ``user_text``, run the tool loop until a final text message,
         and return the extracted payload. Raises asyncio.TimeoutError if any
         model call exceeds ``timeout_s`` (the orchestrator handles it, §3.2)."""
+        self._heal_dangling_tool_calls()
         self.history.append(Message(role="user", content=user_text))
         turn_calls: list[ModelCall] = []
         iters = 0

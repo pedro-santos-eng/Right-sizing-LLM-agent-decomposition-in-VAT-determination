@@ -302,3 +302,47 @@ class TestToolCap:
         turn_result = asyncio.run(worker.run("go"))
         assert turn_result.extraction_error == TOOL_CAP_EXHAUSTED
         assert turn_result.payload is None
+
+    def test_cap_exhaustion_history_healed_on_repair(self):
+        # Harness fix (ratified 2026-08-02): after cap exhaustion the history
+        # ends with an assistant message whose tool_calls have no results; the
+        # NEXT invocation (a repair) must heal it — every pending tool_use id
+        # answered with a deterministic cancellation result BEFORE the new
+        # user message — or the real API rejects the request (400).
+        tool_turn = {
+            "tool_calls": [{"name": "rule_citation_retrieval",
+                            "arguments": {"rule_key": "CLS.ASSIGNED"}}],
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        }
+        final_turn = {
+            "content": 'done ```json\n{"jur": {}}\n```',
+            "usage": {"input_tokens": 1, "output_tokens": 1},
+        }
+        client = make_scripted_client({"w": [tool_turn] * 9 + [final_turn]})
+        worker = make_worker(slice_for(frozenset({"JUR"})), client, "w", timeout_s=5)
+        first = asyncio.run(worker.run("go"))
+        assert first.extraction_error == TOOL_CAP_EXHAUSTED
+        # The dangling assistant tool_calls message is the current tail.
+        assert worker.history[-1].role == "assistant"
+        assert worker.history[-1].tool_calls
+        asyncio.run(worker.run("repair: re-emit"))
+        # Well-formedness: every assistant message carrying tool_calls is
+        # immediately followed by exactly one tool result per call, matching
+        # ids in order — over the WHOLE history.
+        h = worker.history
+        for i, msg in enumerate(h):
+            if msg.role == "assistant" and msg.tool_calls:
+                for j, tc in enumerate(msg.tool_calls):
+                    follow = h[i + 1 + j]
+                    assert follow.role == "tool"
+                    assert follow.tool_call_id == tc.id
+        # The healed results carry the deterministic cancellation payload.
+        healed = [m for m in h if m.role == "tool"
+                  and "TOOL_CALL_CANCELLED" in m.content]
+        assert len(healed) == 1
+        # And the user repair message sits AFTER the healing results.
+        cancel_idx = next(i for i, m in enumerate(h)
+                          if m.role == "tool" and "TOOL_CALL_CANCELLED" in m.content)
+        repair_idx = next(i for i, m in enumerate(h)
+                          if m.role == "user" and m.content.startswith("repair:"))
+        assert cancel_idx < repair_idx

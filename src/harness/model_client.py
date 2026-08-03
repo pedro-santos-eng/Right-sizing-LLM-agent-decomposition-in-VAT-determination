@@ -339,7 +339,20 @@ class AnthropicModelClient:
                         ],
                     }
                 )
-        return "\n\n".join(system_parts), out
+        # Canonical Anthropic shape (harness fix, ratified 2026-08-02): tool
+        # results are user-role blocks, and a request must not carry consecutive
+        # same-role messages — multi-call tool rounds and the timeout path
+        # otherwise produce user-after-user.
+        merged: list[dict] = []
+        for msg in out:
+            content = msg["content"]
+            if isinstance(content, str):
+                content = [{"type": "text", "text": content}]
+            if merged and merged[-1]["role"] == msg["role"]:
+                merged[-1]["content"].extend(content)
+            else:
+                merged.append({"role": msg["role"], "content": list(content)})
+        return "\n\n".join(system_parts), merged
 
     async def create(
         self,
