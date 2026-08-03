@@ -14,6 +14,16 @@ Decision 1's author check was resolved by a full-paper read the same day
 > near-inert, so the intended regime is preserved. Ratified by the author;
 > paper §4.6 amended to match. No run ever used the old pair.
 
+> **Amended 2026-08-03:** the §5 `RAT` instruction text (P_r) now states the
+> band←category bounded rule, GENERATED from the frozen `rules.CATEGORY_TABLE`
+> (never hand-listed). Phase-0 attempt 1 failed gate 1 at C1 = 0%: the sole
+> root cause was a systematic RAT=null failure — the RAT instruction required
+> the band as a tool input but never told a "never invent" worker how to derive
+> it from the category, so a compliant worker had no path to a rate. This is a
+> completeness fix to the instruction surface, not a decoding change; citation
+> and decision scoring remain measured. Ratified by the author under the
+> reopened model-choice decision.
+
 **SOURCE OF TRUTH for Part 2, Layer 2.** Claude Code reads this before touching
 any Layer-2 code. Authority order:
 

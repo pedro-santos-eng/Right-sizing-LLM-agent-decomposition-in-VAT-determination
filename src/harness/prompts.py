@@ -37,7 +37,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-from src.oracle.rules import RULE_KEYS
+from src.oracle.rules import CATEGORY_TABLE, RULE_KEYS
 from src.harness.surface import (
     EXEMPTION_TABLE_TEXT,
     PARTITIONS,
@@ -85,6 +85,24 @@ ROLE_PREAMBLE = (
     "citation keys through the tools. Be deterministic and terse."
 )
 
+def _band_rule_text() -> str:
+    """The band<-category bounded rule, GENERATED from the frozen
+    rules.CATEGORY_TABLE (never hand-listed — §4, §10). Phase-0 amendment,
+    ratified 2026-08-03: the RAT instruction never stated this rule while the
+    tool requires the band as an input, so a compliant worker ("never invent")
+    had no derivable path to a rate — the systematic RAT=null failure."""
+    by_band: dict[str, list[str]] = {}
+    for cat, spec in CATEGORY_TABLE.items():
+        band = spec.get("rate_band")
+        key = band if band is not None else "none"
+        by_band.setdefault(key, []).append(getattr(cat, "value", str(cat)))
+    parts = [f"{band} band for {', '.join(sorted(cats))}"
+             for band, cats in sorted(by_band.items()) if band != "none"]
+    none_cats = ", ".join(sorted(by_band.get("none", [])))
+    tail = f"; no band for {none_cats}" if none_cats else ""
+    return "; ".join(parts) + tail + "."
+
+
 # Per-subtask instruction blocks. These describe the CONDITIONS of each subtask,
 # never the answer for a specific input (grounding §4.4 register; label
 # isolation). Keyed by subtask; shared verbatim across all conditions.
@@ -103,10 +121,12 @@ SUBTASK_INSTRUCTIONS: dict[str, str] = {
         "rule_citation_retrieval for the governing citation."
     ),
     "RAT": (
-        "RAT — rate lookup. For each non-exempt line, look up the rate for the "
-        "jurisdiction and rate band with rate_table_lookup; never invent a rate. "
-        "For an exempt line, no rate band applies: record rate_band and rate as "
-        "null and cite RATE.NA_EXEMPT."
+        "RAT — rate lookup. The rate band follows the classified category "
+        "(bounded rule): " + _band_rule_text() + " For each line with a band, "
+        "look up the rate for the jurisdiction and that band with "
+        "rate_table_lookup; never invent a rate. For an exempt-category line, "
+        "no rate band applies: record rate_band and rate as null and cite "
+        "RATE.NA_EXEMPT."
     ),
     "EXM": (
         "EXM — exemption check. Using the exemption table provided in your state, "
