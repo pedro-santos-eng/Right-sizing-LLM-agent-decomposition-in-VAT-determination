@@ -13,3 +13,4 @@ __pycache__/
 
 # operator scratch — never committed
 scripts/_*
+src/*.egg-info/

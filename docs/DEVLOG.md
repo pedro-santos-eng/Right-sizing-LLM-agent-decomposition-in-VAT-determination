@@ -1,5 +1,21 @@
 # Development Log
 
+## 2026-08-04 — Phase 1 AUTHORIZED — main sweep launched on GEX44
+
+Preconditions verified: arrival gate green on GEX44 (210 passed / 2 skipped;
+VERIFY OK; part1-frozen -> e2d2bdd); live smokes from the measurement host
+212 passed / 0 skipped; deps fix (29184a9) proven by clean-venv
+`pip install -e ".[test]"`; console credit/spend limit confirmed > $125
+against the $84.12 projection (~40% headroom for retries).
+
+Environment snapshot: results/env_gex44_phase1.txt (pip freeze; Python
+3.12.3, Ubuntu 24.04.4, GEX44). Runner: `python -m scripts.sweep --phase 1`
+under tmux; console log at results/phase1_console.log. n-parallel: sweep.py
+default (recorded in the console log), held constant for phases 1-4.
+Phase-0 attempt-2 records remain in results/raw/ per the re-run protocol
+(different phase key; duplicate-guard still a pending follow-up). GO
+recorded with this commit.
+
 ## 2026-08-04 — GEX44 arrival closed; Phase-1 host = GEX44
 
 Server: Hetzner GEX44 #3011859 (FSN1-DC12, 148.251.180.238). Ubuntu
