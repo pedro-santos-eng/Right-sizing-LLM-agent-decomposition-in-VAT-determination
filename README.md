@@ -5,8 +5,10 @@ for the pilot study *"Right-Sizing Agent Decomposition in VAT Determination: A
 Pilot Controlled Sweep"* (in preparation).
 
 **Status.** Part 1 (oracle + dataset) is complete and frozen at tag
-`part1-frozen`. Part 2 (the multi-agent
-experiment harness) is under development and not yet in this repository.
+`part1-frozen`. Part 2 — the multi-agent experiment harness (Layers 1–4:
+activity surface, orchestration, injection, sweep/analysis) — is implemented in
+this repository; Phase 0 (pre-flight gates) is closed. Measured phases (main
+sweep, injection arms, matched-token variants) are pending.
 
 ## Contents
 

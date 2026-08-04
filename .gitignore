@@ -10,3 +10,6 @@ __pycache__/
 /results/*
 !/results/README.md
 .anthropic_key
+
+# operator scratch — never committed
+scripts/_*

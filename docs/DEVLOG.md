@@ -1,5 +1,24 @@
 # Development Log
 
+## 2026-08-04 — History rewrite: commit-identity hygiene (no content change)
+
+23 of 28 commits carried the work-machine identity (pedrosantos_microsoft)
+and 19 carried Claude Code attribution trailers. Rewrote history with
+`git filter-repo` (mailmap → pedro-santos-eng
+<pedromiguelbsantos@gmail.com>; trailers stripped) and force-pushed.
+
+Integrity: unchanged commits keep their hashes — `part1-frozen` still
+resolves to `e2d2bdd` (commit-map: e2d2bdd → e2d2bdd); `pytest -q` → 210
+passed, 2 skipped; `freeze_dataset --verify` → VERIFY OK (all three hashes
+unchanged). Trees byte-identical throughout; only metadata and messages
+changed. HEAD `fb850e4` → `e2dec5b`. Hashes cited in entries ≥ 2026-08-01
+refer to pre-rewrite history; the bridge is `docs/commit-map-rewrite.txt`.
+
+Forward guard: repo-local user.email pinned to the canonical identity;
+Claude Code attribution disabled (`~/.claude/settings.json`). This
+entry's commit is the first post-rewrite commit and doubles as the live
+check.
+
 ## 2026-08-03 — Go-live Phase 0: six harness amendments; gate-1 fail→fix→PASS; model confirmed
 
 Phase-0 dry run (L2 §11) authorized. Two attempts: attempt 1 FAILED gate 1
