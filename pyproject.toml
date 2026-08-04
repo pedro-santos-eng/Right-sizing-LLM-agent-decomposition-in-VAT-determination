@@ -16,9 +16,16 @@ dependencies = [
     "autogen-agentchat==0.7.5",
     "autogen-ext[anthropic]==0.7.5",
     "anthropic>=0.48",
+    # Layer-4 scoring/analysis. Declared as runtime deps after the GEX44
+    # arrival gate caught them undeclared (masked by the dev venv). Floors
+    # admit the dev laptop and the GEX44 server resolutions.
+    "numpy>=2.2",
+    "pandas>=2.2",
 ]
 
 [project.optional-dependencies]
+# Test runner (grounding the arrival gate). Server resolves pytest 9.1.1.
+test = ["pytest>=8"]
 # Layer-4 offline scoring/analysis only (grounding HARNESS_GROUNDING_4_SWEEP §4:
 # "runner and run_one are stdlib-only; scoring/analysis may use pandas/numpy").
 # The sweep runner and run_one child never import these.

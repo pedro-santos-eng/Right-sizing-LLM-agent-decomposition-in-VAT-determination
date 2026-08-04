@@ -46,7 +46,7 @@ the freeze script with `oracle_commit_dirty: false`.
 Requirements: Python ≥ 3.12.
 
 ```bash
-pip install jsonschema pytest
+pip install -e ".[test]"
 
 python -m pytest -q                        # expected: 27 passed
 python -m scripts.freeze_dataset --verify  # expected: VERIFY OK

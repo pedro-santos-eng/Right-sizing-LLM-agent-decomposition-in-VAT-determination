@@ -1,5 +1,38 @@
 # Development Log
 
+## 2026-08-04 — GEX44 arrival closed; Phase-1 host = GEX44
+
+Server: Hetzner GEX44 #3011859 (FSN1-DC12, 148.251.180.238). Ubuntu
+24.04.4 LTS on 2× 1.92 TB NVMe (RAID1; root on md2). i5-13500 (14C/20T,
+max 4.8 GHz), 64 GB RAM. Access key-only via `gex44_v3` (Keeper:
+"Hetzner GEX44 Server"; root password in the Login record). Note: the
+initial key rotation had landed in the rescue system's RAM filesystem;
+re-applied on-disk via rescue mount — authorized_keys on disk now holds
+the single v3 line.
+
+Repo access from the server: fine-grained PAT `gex44-sweep` (this repo
+only, Contents R/W, expires 2026-09-03; git credential store on the
+server; secret in Keeper).
+
+Arrival gate green on the server: pytest → 210 passed, 2 skipped;
+freeze_dataset --verify → VERIFY OK (oracle_commit e2d2bdd…,
+dataset_sha256 3dc683ec…, case_files_sha256 3472544f…); part1-frozen →
+e2d2bdd. Live smokes from the measurement host with ANTHROPIC_API_KEY
+set: 212 passed, 0 skipped (2 live API calls; key file
+`.anthropic_key`, 0600, gitignored).
+
+Reproducibility defect caught by the gate: numpy/pandas (Layer-4
+scoring/analysis) and pytest (runner) were undeclared — masked by the
+dev venv. Fixed in this commit: numpy/pandas as runtime dependencies
+(server resolves numpy 2.5.1, pandas 3.0.5 on Python 3.12.3); pytest as
+a [test] extra (9.1.1). Acceptance: clean-venv `pip install -e ".[test]"`
++ full gate on GEX44, post-push.
+
+Decision (VM): Phase-1 host = GEX44. Latency, retry counts, and
+terminal failures are measured experimental outputs; the dedicated host
+removes laptop-side confounds. Full environment snapshot (pip freeze)
+to be captured at sweep launch.
+
 ## 2026-08-04 — History rewrite: commit-identity hygiene (no content change)
 
 23 of 28 commits carried the work-machine identity (pedrosantos_microsoft)
