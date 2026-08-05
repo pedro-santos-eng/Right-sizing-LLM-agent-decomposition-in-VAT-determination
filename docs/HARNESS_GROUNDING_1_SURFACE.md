@@ -1,9 +1,21 @@
 # HARNESS_GROUNDING_1_SURFACE.md
 
-**Version 1.1 — 2026-07-31.** Supersedes the 2026-07-28 draft (v1.0), which was
+**Version 1.2 — 2026-08-05.** Supersedes the 2026-07-28 draft (v1.0), which was
 authored against a separate reconstruction of the oracle and is not to be used.
 The v1.0→v1.1 changes are listed in §12; the four open design decisions in v1.0
 were ratified on 2026-07-31 (one with an amendment, incorporated below).
+
+> **Amended 2026-08-05 (v1.1 → v1.2):** §3.2 $S_{\text{RCH}}$ now includes
+> `line_items`. Rationale — the **closed-operand principle**: every atom required
+> by a subtask's contractual output fields must be part of that subtask's visible
+> input state. RCH's output contract includes `vat_amount = rate ×
+> line_items[].amount`, but v1.1 gave RCH only upstream records (no case atoms),
+> so the operand reached RCH solely through a *voluntary* echo of `amount` in an
+> upstream CLS worker's record `support` — an unspecified channel that varied
+> across partitions. Discovered via the Phase-1 C2 anomaly, where the bundled
+> CLS+JUR worker did not echo it (116/117 C2 zeros failed at RCH with
+> `vat_amount=0`). Only the §3.2 RCH row changes; no other atom or slice is
+> touched.
 
 **SOURCE OF TRUTH for Part 2, Layer 1.** Claude Code reads this before touching
 any harness code. Authority order:
@@ -196,7 +208,7 @@ from which every coarser worker is composed:
 | JUR | `supplier_country`, `customer_country`, `transaction_type`, `customer_vat_registered`, CLS records | `vat_registration_check`, `rule_citation_retrieval` |
 | RAT | JUR record, CLS records | `rate_table_lookup` |
 | EXM | JUR record, CLS records, **exemption table from $\mathcal{R}$** | `rule_citation_retrieval` |
-| RCH | all prior structured records (CLS, JUR, RAT, EXM) | `rule_citation_retrieval` |
+| RCH | all prior structured records (CLS, JUR, RAT, EXM), plus line-item `{line_id, amount}` for all lines (`line_items` — the `vat_amount = rate × line_items[].amount` operand; v1.2) | `rule_citation_retrieval` |
 
 Keep $F_\tau$ (callable) and $S_\tau$ (visible state) conceptually separate in
 code — the paper (§4.1) leans on this distinction against the homogeneity

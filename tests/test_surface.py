@@ -16,6 +16,9 @@ import jsonschema
 import pytest
 
 from src.harness import surface
+from src.harness import tools as tools_mod
+from src.harness.model_client import make_scripted_client
+from src.harness.orchestrator import RunConfig, _Orchestrator
 from src.harness.surface import (
     ALL_TOOLS,
     CASE_VIEW_ATOMS,
@@ -143,7 +146,15 @@ class TestSliceAlgebra:
             },
             "RAT": {"record:JUR", "record:CLS"},
             "EXM": {"record:JUR", "record:CLS", "exemption_table"},
-            "RCH": {"record:CLS", "record:JUR", "record:RAT", "record:EXM"},
+            # v1.2 amendment (closed-operand principle): RCH also sees line_items,
+            # the vat_amount = rate x line_items[].amount operand.
+            "RCH": {
+                "record:CLS",
+                "record:JUR",
+                "record:RAT",
+                "record:EXM",
+                "line_items",
+            },
         }
         expected_tools = {
             "CLS": {"classification_reference"},
@@ -170,9 +181,15 @@ class TestSliceAlgebra:
         }
         assert "record:CLS" not in w.input_state
         assert "record:JUR" not in w.input_state
-        # second C2 worker {RAT,EXM,RCH}: receives upstream CLS+JUR + R only.
+        # second C2 worker {RAT,EXM,RCH}: receives upstream CLS+JUR + R, plus the
+        # line_items operand RCH needs for vat_amount (v1.2 closed-operand amendment).
         w2 = slice_for(frozenset({"RAT", "EXM", "RCH"}))
-        assert set(w2.input_state) == {"record:CLS", "record:JUR", "exemption_table"}
+        assert set(w2.input_state) == {
+            "record:CLS",
+            "record:JUR",
+            "exemption_table",
+            "line_items",
+        }
 
     def test_c3_intra_worker_subtraction(self):
         # C3 separates {CLS} and {JUR}; the third worker is the C2 second worker.
@@ -266,3 +283,61 @@ class TestAgentCaseView:
         assert view["supplier_country"] == case.supplier_country.value
         assert view["transaction_type"] == case.transaction_type.value
         assert len(view["line_items"]) == len(case.line_items)
+
+
+# ---------------------------------------------------------------------------
+# §3.2 v1.2 amendment — closed-operand regression. RCH's vat_amount operand
+# (line_items[].amount) must travel through RCH's OWN visible input state, not
+# through a voluntary upstream record echo (the Phase-1 C2 anomaly). Offline,
+# scripted, no API. See HARNESS_GROUNDING_1_SURFACE.md §3.2 (v1.1 -> v1.2).
+# ---------------------------------------------------------------------------
+
+
+def _multi_line_case():
+    ds = generator.generate_dataset(seed=42)
+    for c in list(ds.eval_cases) + list(ds.dev_cases):
+        if len(c.line_items) >= 2:
+            return c
+    return ds.dev_cases[0]
+
+
+def _rch_group(condition: str) -> frozenset:
+    """The partition group that owns RCH under this condition."""
+    return next(g for g in PARTITIONS[condition] if "RCH" in g)
+
+
+def _input_state_payload(orch: _Orchestrator, group: frozenset) -> dict:
+    """The JSON payload the orchestrator would hand the group's worker."""
+    msg = orch._input_state_message(slice_for(group))
+    body = msg.split("Here is your input state as JSON:\n", 1)[1].split("\n\n", 1)[0]
+    return json.loads(body)
+
+
+class TestClosedOperandRCH:
+    def test_rch_owner_payload_carries_line_items_with_amount(self):
+        # For every condition, the worker that owns RCH must receive line_items,
+        # and each line item must carry its amount (the vat_amount operand).
+        case = _multi_line_case()
+        for cond in ("C1", "C2", "C3", "C4"):
+            group = _rch_group(cond)
+            assert "line_items" in slice_for(group).input_state, cond
+            orch = _Orchestrator(
+                cond,
+                case,
+                make_scripted_client({}),
+                RunConfig(timeout_s=5),
+                tools_mod.InjectionController(),
+            )
+            payload = _input_state_payload(orch, group)
+            assert "line_items" in payload, cond
+            assert payload["line_items"], cond
+            for li in payload["line_items"]:
+                assert "amount" in li, (cond, li)
+
+    def test_shared_rat_exm_rch_slice_identical_c2_c3(self):
+        # The {RAT,EXM,RCH} worker is reached identically in C2 and C3; the
+        # amendment must not perturb this shared-slice equality (§4).
+        grp = frozenset({"RAT", "EXM", "RCH"})
+        assert grp in PARTITIONS["C2"] and grp in PARTITIONS["C3"]
+        assert _rch_group("C2") == grp and _rch_group("C3") == grp
+        assert slice_for(_rch_group("C2")) == slice_for(_rch_group("C3"))

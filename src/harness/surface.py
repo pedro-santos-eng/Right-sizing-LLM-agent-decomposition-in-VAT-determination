@@ -142,6 +142,11 @@ STATE_ATOMS: dict[str, frozenset[str]] = {
             _record_atom("JUR"),
             _record_atom("RAT"),
             _record_atom("EXM"),
+            # Closed-operand principle (grounding §3.2, v1.1 -> v1.2 amendment):
+            # RCH's contractual output includes vat_amount = rate x
+            # line_items[].amount, so the line-item amounts must be part of RCH's
+            # visible input state, not reach it through an upstream record echo.
+            "line_items",
         }
     ),
 }

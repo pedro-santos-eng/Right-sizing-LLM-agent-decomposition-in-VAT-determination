@@ -1,5 +1,33 @@
 # Development Log
 
+## 2026-08-05 — Phase-1 C2 anomaly root-caused: unspecified operand channel; §3.2 amended (S_RCH += line_items)
+
+Diagnosis (from raw records, $0): RCH's output contract includes
+vat_amount = rate × line_items[].amount, but §3.2 gave RCH no case
+atoms — only upstream records. The operand reached RCH only when an
+upstream CLS worker voluntarily echoed `amount` in its record
+`support` (an unspecified channel). Solo-CLS conditions (C3, C4)
+happened to echo it; the bundled CLS+JUR worker (C2) did not: 116/117
+C2 zeros fail exactly at RCH with vat_amount=0, terminal ok, traces
+consistent; the case amount appears nowhere in the C2 record. S0/C1
+are structurally immune (full case view).
+
+Resolution (ratified): closed-operand principle — every atom required
+by a subtask's contractual output fields must be in that subtask's
+visible state. §3.2 amended: S_RCH += line_items (HARNESS_GROUNDING_1
+v1.1 → v1.2). Regression test added (every RCH-owning worker's payload
+carries line_items with amount); C2==C3 shared-slice equality
+preserved.
+
+Consequence: Phase 1 (mode none) becomes attempt 1 — C2 invalid by
+defect; C3/C4 accuracies rested on the voluntary echo and are not
+comparable under the amended surface; S0/C1 structurally unaffected
+but will be re-run for a single-surface attempt. Plan: archive
+attempt-1 raw + derived tables as diagnostic evidence, re-run Phase 1
+in full as attempt 2 under v1.2 (~$20; ~$105 projected program total
+vs >$125 credit). Attempt-1 falsification/contrast tables are
+diagnostic only and will not be reported as results.
+
 ## 2026-08-04 — Phase 1 AUTHORIZED — main sweep launched on GEX44
 
 Preconditions verified: arrival gate green on GEX44 (210 passed / 2 skipped;
