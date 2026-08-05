@@ -1,0 +1,322 @@
+{
+  "emitted_trace": {
+    "case_id": "eval_030",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "FR",
+      "lines": [
+        {
+          "amount": 6966.0,
+          "line_id": "L1",
+          "rate": 0.055,
+          "vat_amount": 383.13
+        }
+      ],
+      "total_vat_amount": 383.13
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "b2c_cross_border",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.B2C_CROSS_BORDER",
+      "subtask": "JUR",
+      "support": {
+        "customer_country": "ES",
+        "customer_vat_registered": false,
+        "supplier_country": "FR",
+        "transaction_type": "B2C"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "RED_GOODS"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-RED_GOODS"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "RED_GOODS"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.055,
+            "rate_band": "reduced"
+          },
+          "rule_reference": "RATE.REDUCED",
+          "subtask": "RAT",
+          "support": {
+            "category": "RED_GOODS",
+            "jurisdiction": "FR"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 383.13
+          },
+          "rule_reference": "RC.B2C.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "amount": 6966.0,
+            "jur_path": "b2c_cross_border",
+            "rate": 0.055
+          }
+        }
+      }
+    ]
+  },
+  "plan_sha256": null,
+  "run_record": {
+    "accounting": {
+      "case_status": "ok",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {},
+        "fired": false,
+        "mode": "none",
+        "plan_sha256": null,
+        "tau": null
+      },
+      "latency_ms": 18024.344455974642,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 2231,
+          "latency_ms": 2614.596867002547,
+          "output_tokens": 128,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 2529,
+          "latency_ms": 2276.806501991814,
+          "output_tokens": 197,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 2801,
+          "latency_ms": 3359.7362649888964,
+          "output_tokens": 192,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 3118,
+          "latency_ms": 1384.953509987099,
+          "output_tokens": 107,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 3278,
+          "latency_ms": 2150.92015999835,
+          "output_tokens": 120,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 3463,
+          "latency_ms": 6237.331152005936,
+          "output_tokens": 690,
+          "worker_id": "S0"
+        }
+      ],
+      "prompt_hashes": {
+        "S0": "9d7ba74fa46456a49dceb43c359abc5a52082d174048be56d82d483e0566150d"
+      },
+      "s0_knobs_plain": true,
+      "token_counts": {
+        "by_worker": {
+          "S0": {
+            "input": 17420,
+            "output": 1434
+          }
+        },
+        "input": 17420,
+        "output": 1434,
+        "total": 18854
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_030",
+      "condition": "S0",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [],
+    "schema_version": "1",
+    "tool_invocations": [
+      {
+        "arguments": {},
+        "result": {
+          "categories": [
+            {
+              "category": "GEN_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "RED_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "GEN_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "RED_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "EXEMPT_SUPPLY",
+              "kind": "either"
+            }
+          ]
+        },
+        "tool": "classification_reference"
+      },
+      {
+        "arguments": {
+          "case_id": "eval_030"
+        },
+        "result": {
+          "case_id": "eval_030",
+          "customer_vat_registered": false
+        },
+        "tool": "vat_registration_check"
+      },
+      {
+        "arguments": {
+          "rule_key": "JUR.B2C_CROSS_BORDER"
+        },
+        "result": {
+          "rule_key": "JUR.B2C_CROSS_BORDER",
+          "text": "Where the supplier and the customer are established in different jurisdictions and the customer is a non-taxable person, the place of supply is, under the bounded model, the jurisdiction of the supplier."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "band": "reduced",
+          "jurisdiction": "FR"
+        },
+        "result": {
+          "band": "reduced",
+          "jurisdiction": "FR",
+          "rate": 0.055
+        },
+        "tool": "rate_table_lookup"
+      },
+      {
+        "arguments": {
+          "rule_key": "RATE.REDUCED"
+        },
+        "result": {
+          "rule_key": "RATE.REDUCED",
+          "text": "A line item in the reduced-rated band is taxed at the reduced rate published for the applicable jurisdiction."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "EXM.NONE"
+        },
+        "result": {
+          "rule_key": "EXM.NONE",
+          "text": "A supply that does not fall within the exemption table is not exempt and is taxed according to its rate band."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.B2C.SUPPLIER_CHARGES"
+        },
+        "result": {
+          "rule_key": "RC.B2C.SUPPLIER_CHARGES",
+          "text": "On a cross-border supply to a non-taxable person the supplier charges tax in the applicable place of supply; the liable party is the supplier."
+        },
+        "tool": "rule_citation_retrieval"
+      }
+    ],
+    "validation": {
+      "final": {
+        "failed_checks": [],
+        "ok": true
+      },
+      "record_verdicts": []
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS",
+          "JUR",
+          "RAT",
+          "EXM",
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "S0"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_030",
+    "condition": "S0",
+    "mode": "none",
+    "phase": 1,
+    "repeat": 3
+  },
+  "terminal_status": "ok",
+  "wall_clock": {
+    "duration_ms": 18030.37249299814,
+    "end_utc": "2026-08-05T11:04:54Z",
+    "start_utc": "2026-08-05T11:04:36Z"
+  }
+}

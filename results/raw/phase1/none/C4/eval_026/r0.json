@@ -1,0 +1,423 @@
+{
+  "emitted_trace": {
+    "case_id": "eval_026",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "FR",
+      "lines": [
+        {
+          "line_id": "L1",
+          "outcome": "exempt",
+          "vat_amount": 0.0
+        }
+      ],
+      "total_vat_amount": 0.0
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "b2c_cross_border",
+        "jurisdiction": "FR"
+      },
+      "rule_reference": "JUR.B2C_CROSS_BORDER",
+      "subtask": "JUR",
+      "support": {
+        "customer_country": "ES",
+        "customer_vat_registered": false,
+        "supplier_country": "FR",
+        "transaction_type": "B2C"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "EXEMPT_SUPPLY"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "amount": 8880.0,
+            "description": "synthetic-EXEMPT_SUPPLY"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": true
+          },
+          "rule_reference": "EXM.EXEMPT_SUPPLY",
+          "subtask": "EXM",
+          "support": {
+            "amount": 8880.0,
+            "category": "EXEMPT_SUPPLY",
+            "exemption_table_entry": "category=EXEMPT_SUPPLY exempt=yes"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": null,
+            "rate_band": null
+          },
+          "rule_reference": "RATE.NA_EXEMPT",
+          "subtask": "RAT",
+          "support": {
+            "category": "EXEMPT_SUPPLY",
+            "jurisdiction": "FR"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "none",
+            "non_charging_reason": "exempt",
+            "outcome": "exempt",
+            "reverse_charge": false,
+            "vat_amount": 0.0
+          },
+          "rule_reference": "RC.EXEMPT.NO_CHARGE",
+          "subtask": "RCH",
+          "support": {
+            "amount": 8880.0,
+            "category": "EXEMPT_SUPPLY",
+            "exempt": true,
+            "jur_path": "b2c_cross_border",
+            "jurisdiction": "FR"
+          }
+        }
+      }
+    ]
+  },
+  "plan_sha256": null,
+  "run_record": {
+    "accounting": {
+      "case_status": "ok",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {},
+        "fired": false,
+        "mode": "none",
+        "plan_sha256": null,
+        "tau": null
+      },
+      "latency_ms": 17873.893344018143,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1006,
+          "latency_ms": 1297.4889230099507,
+          "output_tokens": 51,
+          "worker_id": "C4:CLS"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1154,
+          "latency_ms": 1535.65230401,
+          "output_tokens": 157,
+          "worker_id": "C4:CLS"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1243,
+          "latency_ms": 1552.1746869926574,
+          "output_tokens": 144,
+          "worker_id": "C4:JUR"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1538,
+          "latency_ms": 2051.728163001826,
+          "output_tokens": 192,
+          "worker_id": "C4:JUR"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1254,
+          "latency_ms": 2601.097077000304,
+          "output_tokens": 207,
+          "worker_id": "C4:RAT"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1262,
+          "latency_ms": 1318.0182670039358,
+          "output_tokens": 95,
+          "worker_id": "C4:EXM"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1418,
+          "latency_ms": 2322.541283996543,
+          "output_tokens": 221,
+          "worker_id": "C4:EXM"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1569,
+          "latency_ms": 1589.256667997688,
+          "output_tokens": 91,
+          "worker_id": "C4:RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1719,
+          "latency_ms": 3605.9359710052377,
+          "output_tokens": 381,
+          "worker_id": "C4:RCH"
+        }
+      ],
+      "prompt_hashes": {
+        "C4:CLS": "e5757066e25a3950ff5f702ae8785afae4f90d5bc9d4f93c764989b63cb95d73",
+        "C4:EXM": "1b2d9d2e6d74e957dfb2fed36d340088a5235cc2cbbfdb4ac2ca42f58ad07960",
+        "C4:JUR": "48b4aed6480e8fca7fe40be226061cb1997147f26f32af9458f800618d453863",
+        "C4:RAT": "aa5a3fbdb8566ce4b61e2605318e67bee9fdf94ca387eb69504e9e763da149e3",
+        "C4:RCH": "8f563505f701693083d3cedb17d57280b9c0fdb0c64001d322a45a47ae832418"
+      },
+      "token_counts": {
+        "by_worker": {
+          "C4:CLS": {
+            "input": 2160,
+            "output": 208
+          },
+          "C4:EXM": {
+            "input": 2680,
+            "output": 316
+          },
+          "C4:JUR": {
+            "input": 2781,
+            "output": 336
+          },
+          "C4:RAT": {
+            "input": 1254,
+            "output": 207
+          },
+          "C4:RCH": {
+            "input": 3288,
+            "output": 472
+          }
+        },
+        "input": 12163,
+        "output": 1539,
+        "total": 13702
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_026",
+      "condition": "C4",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [],
+    "schema_version": "1",
+    "tool_invocations": [
+      {
+        "arguments": {},
+        "result": {
+          "categories": [
+            {
+              "category": "GEN_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "RED_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "GEN_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "RED_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "EXEMPT_SUPPLY",
+              "kind": "either"
+            }
+          ]
+        },
+        "tool": "classification_reference"
+      },
+      {
+        "arguments": {
+          "rule_key": "JUR.B2C_CROSS_BORDER"
+        },
+        "result": {
+          "rule_key": "JUR.B2C_CROSS_BORDER",
+          "text": "Where the supplier and the customer are established in different jurisdictions and the customer is a non-taxable person, the place of supply is, under the bounded model, the jurisdiction of the supplier."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "case_id": "eval_026"
+        },
+        "result": {
+          "case_id": "eval_026",
+          "customer_vat_registered": false
+        },
+        "tool": "vat_registration_check"
+      },
+      {
+        "arguments": {
+          "rule_key": "EXM.EXEMPT_SUPPLY"
+        },
+        "result": {
+          "rule_key": "EXM.EXEMPT_SUPPLY",
+          "text": "A supply falling within the exemption table is exempt from tax; it carries no chargeable rate, and the exemption must be cited."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.EXEMPT.NO_CHARGE"
+        },
+        "result": {
+          "rule_key": "RC.EXEMPT.NO_CHARGE",
+          "text": "Where a supply is exempt, no tax is charged and no reverse charge arises regardless of the parties; exemption takes precedence."
+        },
+        "tool": "rule_citation_retrieval"
+      }
+    ],
+    "validation": {
+      "final": {
+        "failed_checks": [],
+        "ok": true
+      },
+      "record_verdicts": [
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "CLS"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "subtask": "JUR"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RAT"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "EXM"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RCH"
+        }
+      ]
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:CLS"
+      },
+      {
+        "assigned": [
+          "JUR"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:JUR"
+      },
+      {
+        "assigned": [
+          "RAT"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:RAT"
+      },
+      {
+        "assigned": [
+          "EXM"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:EXM"
+      },
+      {
+        "assigned": [
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:RCH"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_026",
+    "condition": "C4",
+    "mode": "none",
+    "phase": 1,
+    "repeat": 0
+  },
+  "terminal_status": "ok",
+  "wall_clock": {
+    "duration_ms": 15284.044451997033,
+    "end_utc": "2026-08-05T13:58:43Z",
+    "start_utc": "2026-08-05T13:58:27Z"
+  }
+}

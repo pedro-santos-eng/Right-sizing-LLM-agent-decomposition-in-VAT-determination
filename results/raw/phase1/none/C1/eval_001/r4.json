@@ -1,0 +1,333 @@
+{
+  "emitted_trace": {
+    "case_id": "eval_001",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "DE",
+      "lines": [
+        {
+          "amount": 4062.0,
+          "category": "GEN_SERVICE",
+          "description": "synthetic-GEN_SERVICE",
+          "exempt": false,
+          "liable_party": "supplier",
+          "line_id": "L1",
+          "outcome": "standard_charge",
+          "rate": 0.19,
+          "rate_band": "standard",
+          "vat_amount": 771.78
+        }
+      ],
+      "total_vat_amount": 771.78
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "customer_country": "DE",
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_SERVICE"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-GEN_SERVICE"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_SERVICE"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.19,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "category": "GEN_SERVICE",
+            "jurisdiction": "DE"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 771.78
+          },
+          "rule_reference": "RC.DOMESTIC.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "customer_country": "DE",
+            "exempt": false,
+            "supplier_country": "DE",
+            "transaction_type": "B2B"
+          }
+        }
+      }
+    ]
+  },
+  "plan_sha256": null,
+  "run_record": {
+    "accounting": {
+      "case_status": "ok",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {},
+        "fired": false,
+        "mode": "none",
+        "plan_sha256": null,
+        "tau": null
+      },
+      "latency_ms": 9756.523073010612,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 2275,
+          "latency_ms": 2175.685907001025,
+          "output_tokens": 263,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 2935,
+          "latency_ms": 1273.695645009866,
+          "output_tokens": 87,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 3053,
+          "latency_ms": 6307.141520999721,
+          "output_tokens": 912,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        }
+      ],
+      "prompt_hashes": {
+        "C1:CLS+JUR+RAT+EXM+RCH": "c57df552d55512b4b43bac3b9345666a74159f28a144f04e0a261d92f92c2577"
+      },
+      "token_counts": {
+        "by_worker": {
+          "C1:CLS+JUR+RAT+EXM+RCH": {
+            "input": 8263,
+            "output": 1262
+          }
+        },
+        "input": 8263,
+        "output": 1262,
+        "total": 9525
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_001",
+      "condition": "C1",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [],
+    "schema_version": "1",
+    "tool_invocations": [
+      {
+        "arguments": {},
+        "result": {
+          "categories": [
+            {
+              "category": "GEN_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "RED_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "GEN_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "RED_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "EXEMPT_SUPPLY",
+              "kind": "either"
+            }
+          ]
+        },
+        "tool": "classification_reference"
+      },
+      {
+        "arguments": {
+          "rule_key": "JUR.DOMESTIC"
+        },
+        "result": {
+          "rule_key": "JUR.DOMESTIC",
+          "text": "Where the supplier and the customer are established in the same jurisdiction, the supply is domestic and the place of supply is that jurisdiction."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RATE.STANDARD"
+        },
+        "result": {
+          "rule_key": "RATE.STANDARD",
+          "text": "A line item in the standard-rated band is taxed at the standard rate published for the applicable jurisdiction."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "EXM.NONE"
+        },
+        "result": {
+          "rule_key": "EXM.NONE",
+          "text": "A supply that does not fall within the exemption table is not exempt and is taxed according to its rate band."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.DOMESTIC.SUPPLIER_CHARGES"
+        },
+        "result": {
+          "rule_key": "RC.DOMESTIC.SUPPLIER_CHARGES",
+          "text": "On a domestic supply the supplier accounts for and charges the tax; the liable party is the supplier."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "band": "standard",
+          "jurisdiction": "DE"
+        },
+        "result": {
+          "band": "standard",
+          "jurisdiction": "DE",
+          "rate": 0.19
+        },
+        "tool": "rate_table_lookup"
+      }
+    ],
+    "validation": {
+      "final": {
+        "failed_checks": [],
+        "ok": true
+      },
+      "record_verdicts": [
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "CLS"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "subtask": "JUR"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RAT"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "EXM"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RCH"
+        }
+      ]
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS",
+          "JUR",
+          "RAT",
+          "EXM",
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_001",
+    "condition": "C1",
+    "mode": "none",
+    "phase": 1,
+    "repeat": 4
+  },
+  "terminal_status": "ok",
+  "wall_clock": {
+    "duration_ms": 9759.111059000134,
+    "end_utc": "2026-08-05T11:16:42Z",
+    "start_utc": "2026-08-05T11:16:32Z"
+  }
+}

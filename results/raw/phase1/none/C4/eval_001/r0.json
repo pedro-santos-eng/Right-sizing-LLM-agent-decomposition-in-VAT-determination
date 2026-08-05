@@ -1,0 +1,455 @@
+{
+  "emitted_trace": {
+    "case_id": "eval_001",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "DE",
+      "lines": [
+        {
+          "liable_party": "supplier",
+          "line_id": "L1",
+          "outcome": "standard_charge",
+          "vat_amount": 771.78
+        }
+      ],
+      "total_vat_amount": 771.78
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "domestic",
+        "jurisdiction": "DE"
+      },
+      "rule_reference": "JUR.DOMESTIC",
+      "subtask": "JUR",
+      "support": {
+        "customer_country": "DE",
+        "customer_vat_registered": true,
+        "supplier_country": "DE",
+        "transaction_type": "B2B"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_SERVICE"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "amount": 4062.0,
+            "description": "synthetic-GEN_SERVICE"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_SERVICE",
+            "exemption_table_lookup": "exempt=no"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.19,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "band_mapping": "GEN_SERVICE \u2192 standard",
+            "category": "GEN_SERVICE",
+            "jurisdiction": "DE"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "supplier",
+            "non_charging_reason": null,
+            "outcome": "standard_charge",
+            "reverse_charge": false,
+            "vat_amount": 771.78
+          },
+          "rule_reference": "RC.DOMESTIC.SUPPLIER_CHARGES",
+          "subtask": "RCH",
+          "support": {
+            "amount": 4062.0,
+            "category": "GEN_SERVICE",
+            "exempt": false,
+            "jurisdiction": "DE",
+            "rate": 0.19,
+            "transaction_type": "B2B"
+          }
+        }
+      }
+    ]
+  },
+  "plan_sha256": null,
+  "run_record": {
+    "accounting": {
+      "case_status": "ok",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {},
+        "fired": false,
+        "mode": "none",
+        "plan_sha256": null,
+        "tau": null
+      },
+      "latency_ms": 23189.26603597356,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1005,
+          "latency_ms": 1007.4329159979243,
+          "output_tokens": 51,
+          "worker_id": "C4:CLS"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1153,
+          "latency_ms": 2110.256366999238,
+          "output_tokens": 157,
+          "worker_id": "C4:CLS"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1241,
+          "latency_ms": 1872.5792289915262,
+          "output_tokens": 122,
+          "worker_id": "C4:JUR"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1493,
+          "latency_ms": 1916.3814499916043,
+          "output_tokens": 158,
+          "worker_id": "C4:JUR"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1239,
+          "latency_ms": 1376.5813659993,
+          "output_tokens": 113,
+          "worker_id": "C4:RAT"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1383,
+          "latency_ms": 1364.0820839937078,
+          "output_tokens": 141,
+          "worker_id": "C4:RAT"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1247,
+          "latency_ms": 1773.4692399972118,
+          "output_tokens": 148,
+          "worker_id": "C4:EXM"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1448,
+          "latency_ms": 1411.8325710005593,
+          "output_tokens": 123,
+          "worker_id": "C4:EXM"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 1552,
+          "latency_ms": 2025.653331002104,
+          "output_tokens": 160,
+          "worker_id": "C4:RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 1869,
+          "latency_ms": 8330.997482000384,
+          "output_tokens": 503,
+          "worker_id": "C4:RCH"
+        }
+      ],
+      "prompt_hashes": {
+        "C4:CLS": "e5757066e25a3950ff5f702ae8785afae4f90d5bc9d4f93c764989b63cb95d73",
+        "C4:EXM": "1b2d9d2e6d74e957dfb2fed36d340088a5235cc2cbbfdb4ac2ca42f58ad07960",
+        "C4:JUR": "48b4aed6480e8fca7fe40be226061cb1997147f26f32af9458f800618d453863",
+        "C4:RAT": "aa5a3fbdb8566ce4b61e2605318e67bee9fdf94ca387eb69504e9e763da149e3",
+        "C4:RCH": "8f563505f701693083d3cedb17d57280b9c0fdb0c64001d322a45a47ae832418"
+      },
+      "token_counts": {
+        "by_worker": {
+          "C4:CLS": {
+            "input": 2158,
+            "output": 208
+          },
+          "C4:EXM": {
+            "input": 2695,
+            "output": 271
+          },
+          "C4:JUR": {
+            "input": 2734,
+            "output": 280
+          },
+          "C4:RAT": {
+            "input": 2622,
+            "output": 254
+          },
+          "C4:RCH": {
+            "input": 3421,
+            "output": 663
+          }
+        },
+        "input": 13630,
+        "output": 1676,
+        "total": 15306
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_001",
+      "condition": "C4",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [],
+    "schema_version": "1",
+    "tool_invocations": [
+      {
+        "arguments": {},
+        "result": {
+          "categories": [
+            {
+              "category": "GEN_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "RED_GOODS",
+              "kind": "goods"
+            },
+            {
+              "category": "GEN_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "RED_SERVICE",
+              "kind": "service"
+            },
+            {
+              "category": "EXEMPT_SUPPLY",
+              "kind": "either"
+            }
+          ]
+        },
+        "tool": "classification_reference"
+      },
+      {
+        "arguments": {
+          "case_id": "eval_001"
+        },
+        "result": {
+          "case_id": "eval_001",
+          "customer_vat_registered": true
+        },
+        "tool": "vat_registration_check"
+      },
+      {
+        "arguments": {
+          "rule_key": "JUR.DOMESTIC"
+        },
+        "result": {
+          "rule_key": "JUR.DOMESTIC",
+          "text": "Where the supplier and the customer are established in the same jurisdiction, the supply is domestic and the place of supply is that jurisdiction."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "band": "standard",
+          "jurisdiction": "DE"
+        },
+        "result": {
+          "band": "standard",
+          "jurisdiction": "DE",
+          "rate": 0.19
+        },
+        "tool": "rate_table_lookup"
+      },
+      {
+        "arguments": {
+          "rule_key": "EXM.NONE"
+        },
+        "result": {
+          "rule_key": "EXM.NONE",
+          "text": "A supply that does not fall within the exemption table is not exempt and is taxed according to its rate band."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.DOMESTIC.SUPPLIER_CHARGES"
+        },
+        "result": {
+          "rule_key": "RC.DOMESTIC.SUPPLIER_CHARGES",
+          "text": "On a domestic supply the supplier accounts for and charges the tax; the liable party is the supplier."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.EXEMPT.NO_CHARGE"
+        },
+        "result": {
+          "rule_key": "RC.EXEMPT.NO_CHARGE",
+          "text": "Where a supply is exempt, no tax is charged and no reverse charge arises regardless of the parties; exemption takes precedence."
+        },
+        "tool": "rule_citation_retrieval"
+      }
+    ],
+    "validation": {
+      "final": {
+        "failed_checks": [],
+        "ok": true
+      },
+      "record_verdicts": [
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "CLS"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "subtask": "JUR"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RAT"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "EXM"
+        },
+        {
+          "accepted": true,
+          "attempt": 0,
+          "deferred_checks": [],
+          "failed_checks": [],
+          "line_id": "L1",
+          "subtask": "RCH"
+        }
+      ]
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:CLS"
+      },
+      {
+        "assigned": [
+          "JUR"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:JUR"
+      },
+      {
+        "assigned": [
+          "RAT"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:RAT"
+      },
+      {
+        "assigned": [
+          "EXM"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:EXM"
+      },
+      {
+        "assigned": [
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "C4:RCH"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_001",
+    "condition": "C4",
+    "mode": "none",
+    "phase": 1,
+    "repeat": 0
+  },
+  "terminal_status": "ok",
+  "wall_clock": {
+    "duration_ms": 20460.938086005626,
+    "end_utc": "2026-08-05T13:27:23Z",
+    "start_utc": "2026-08-05T13:27:03Z"
+  }
+}
