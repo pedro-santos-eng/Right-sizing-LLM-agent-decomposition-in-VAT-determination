@@ -20,8 +20,14 @@ Every §6.1 rule implemented here:
   - terminal ⇒ final incorrect + trace-inconsistent, cost/latency counted in full;
   - prompt/completion tokens, tool calls, retries, DERIVED dollars (§5);
   - wall-clock latency;
-  - substitution-success indicator for every injected mode (§6.4): record
-    survival for hallucination; validated-trace-within-budget for timeout/outage.
+  - substitution-success indicator (§6.4-literal) for every injected mode:
+    the fraction reaching a validated trace within budget — identical semantics
+    for hallucination, timeout, and outage (a case that still terminated ``ok``
+    despite the fault);
+  - record-substituted indicator (hallucination only): whether the injected
+    record survived into the emitted trace's τ slot — the pre-9f7c298
+    hallucination metric, retained as its own column now that
+    substitution-success is §6.4-literal for all modes.
 """
 
 from __future__ import annotations
@@ -202,7 +208,10 @@ def score_record(raw: dict, price_sheet: dict) -> dict:
         "injection_tau": injection.get("tau"),
         "injection_fired": bool(injection.get("fired", False)),
         "substitution_success": _substitution_success(
-            sweep, injection, emitted, case_id, terminal_status
+            sweep, injection, terminal_status
+        ),
+        "record_substituted": _record_substituted(
+            sweep, injection, emitted, case_id
         ),
     }
     for tau in SUBTASKS:
@@ -215,31 +224,39 @@ def score_record(raw: dict, price_sheet: dict) -> dict:
 _INJECTED_MODES = frozenset({"hallucination", "timeout", "outage"})
 
 
-def _substitution_success(sweep, injection, emitted, case_id, terminal_status):
-    """§6.4 substitution-success indicator, dispatched by injection mode.
+def _substitution_success(sweep, injection, terminal_status):
+    """§6.4-literal substitution-success indicator, identical for every injected
+    mode: "the fraction of injected cases reaching a validated trace within
+    budget" — i.e. the case still terminated ``ok`` (a validated trace) despite
+    the fault. Ratified for hallucination too (previously record-survival; that
+    metric moves to ``record_substituted``).
+
     The metric is defined over INJECTED cases (§6.4: "fraction of injected
     cases..."), so the denominator is the fired cells: ``None`` (not applicable,
     dropped by ``analyze``) for un-injected modes AND for injected modes whose
-    seam did not fire on this case; a bool only when the injection fired.
-
-      - hallucination: did the injected record SURVIVE into the emitted trace's
-        τ slot (record substitution)?
-      - timeout / outage: there is no injected record to survive, so the §6.4
-        analog is the literal "fraction of injected cases reaching a validated
-        trace within budget" — i.e. the case still terminated ``ok`` (a
-        validated trace) despite the fault.
-
-    Hallucination fires on every case (one τ per case, deterministic), so the
-    not-fired→None branch never affects its column."""
+    seam did not fire on this case; a bool only when the injection fired."""
     mode = sweep["mode"]
     if mode not in _INJECTED_MODES:
         return None
     if not injection.get("fired"):
         return None
-    if mode == "hallucination":
-        return _hallucination_survived(injection, emitted, case_id)
-    # timeout / outage: validated trace reached within the repair budget.
     return terminal_status == "ok"
+
+
+def _record_substituted(sweep, injection, emitted, case_id):
+    """Record-substitution indicator (hallucination ONLY): did the injected
+    record SURVIVE into the emitted trace's τ slot? The pre-9f7c298
+    hallucination substitution metric, retained as a distinct column now that
+    ``substitution_success`` is §6.4-literal for all modes. ``None`` (not
+    applicable) for every other mode and for non-fired hallucination cells.
+
+    Hallucination fires on every case (one τ per case, deterministic), so the
+    not-fired→None branch never affects its column."""
+    if sweep["mode"] != "hallucination":
+        return None
+    if not injection.get("fired"):
+        return None
+    return _hallucination_survived(injection, emitted, case_id)
 
 
 def _hallucination_survived(injection, emitted, case_id):

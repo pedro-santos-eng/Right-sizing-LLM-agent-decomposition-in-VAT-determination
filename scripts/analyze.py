@@ -376,6 +376,8 @@ def injection_cells(scored: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for (mode, cond), cell in inj.groupby(["mode", "condition"]):
         sub_success = cell["substitution_success"].dropna()
+        rec_sub = (cell["record_substituted"].dropna()
+                   if "record_substituted" in cell.columns else pd.Series(dtype=float))
         validated = cell[cell["trace_consistent"]]
         cell_tok = cell.groupby("case_id")["total_tokens"].mean()
         common = sorted(set(cell_tok.index) & set(base_tok.loc[cond].index)) if cond in base_tok.index.get_level_values(0) else []
@@ -385,9 +387,69 @@ def injection_cells(scored: pd.DataFrame) -> pd.DataFrame:
             "condition": cond,
             "n_runs": len(cell),
             "substitution_success_rate": float(sub_success.mean()) if len(sub_success) else float("nan"),
+            "record_substituted_rate": float(rec_sub.mean()) if len(rec_sub) else float("nan"),
             "all_case_accuracy": float(cell["final_answer_accuracy"].mean()),
             "validated_trace_accuracy": float(validated["final_answer_accuracy"].mean()) if len(validated) else float("nan"),
             "token_cost_penalty_vs_baseline": penalty,
+        })
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
+# §8 injection-delta table: paired per-case accuracy delta of each injection
+# cell vs the phase-1 mode-none baseline for that condition, with a
+# case-clustered percentile bootstrap CI (its own pinned seed, DECISION-noted).
+# ---------------------------------------------------------------------------
+
+INJECTION_DELTA_SEED = 42
+N_DELTA_BOOTSTRAP = 1000
+
+
+def delta_bootstrap_ci(d: np.ndarray, seed: int = INJECTION_DELTA_SEED,
+                       n: int = N_DELTA_BOOTSTRAP) -> tuple[float, float]:
+    """Case-clustered percentile bootstrap for the injection-delta table.
+    EXACT reference algorithm: ``numpy.default_rng(seed)`` per cell; ``n``
+    iterations each drawing ``rng.choice(d, size=len(d), replace=True).mean()``;
+    CI = ``numpy.percentile`` at [2.5, 97.5] of the ``n`` resample means."""
+    d = np.asarray(d, dtype=float)
+    if len(d) == 0:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    means = np.empty(n)
+    for i in range(n):
+        means[i] = rng.choice(d, size=len(d), replace=True).mean()
+    lo, hi = np.percentile(means, [2.5, 97.5])
+    return (float(lo), float(hi))
+
+
+def injection_deltas(scored: pd.DataFrame) -> pd.DataFrame:
+    """§8 paired per-case accuracy deltas. For each (injection mode, condition)
+    cell: the case-level mean final-answer accuracy (over the 5 repeats) under
+    injection MINUS the same-condition phase-1 mode-none baseline case-level
+    mean, paired over common cases; reporting the mean delta, a 95%
+    case-clustered percentile bootstrap CI (seed 42), and n cases."""
+    inj = scored[scored["phase"] == 3]
+    base = scored[(scored["phase"] == 1) & (scored["mode"] == "none")]
+    base_acc = base.groupby(["condition", "case_id"])["final_answer_accuracy"].mean()
+    have_cond = set(base_acc.index.get_level_values(0))
+    rows = []
+    for (mode, cond), cell in inj.groupby(["mode", "condition"]):
+        if cond not in have_cond:
+            continue
+        cell_acc = cell.groupby("case_id")["final_answer_accuracy"].mean()
+        base_cond = base_acc.loc[cond]
+        common = sorted(set(cell_acc.index) & set(base_cond.index))
+        d = np.array([cell_acc[c] - base_cond[c] for c in common], dtype=float)
+        if len(d) == 0:
+            continue
+        ci_lo, ci_hi = delta_bootstrap_ci(d)
+        rows.append({
+            "mode": mode,
+            "condition": cond,
+            "n_cases": len(d),
+            "mean_delta": float(d.mean()),
+            "ci_low": ci_lo,
+            "ci_high": ci_hi,
         })
     return pd.DataFrame(rows)
 
@@ -430,6 +492,7 @@ def build_analysis(scored: pd.DataFrame) -> dict[str, pd.DataFrame]:
         "headline_contrasts": pd.DataFrame(contrast_rows),
         "supplementary_contrasts": pd.DataFrame(supplementary_rows),
         "injection_cells": injection_cells(scored),
+        "injection_deltas": injection_deltas(scored),
         "falsification": evaluate_falsification(cl, contrast_by_name),
     }
 

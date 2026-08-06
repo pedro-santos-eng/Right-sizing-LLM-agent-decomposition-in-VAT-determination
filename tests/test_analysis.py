@@ -58,6 +58,33 @@ class TestPrimitives:
         assert h["d"]["holm_adjusted"] == pytest.approx(0.5) and h["d"]["reject"] is False
 
 
+class TestInjectionDeltaBootstrap:
+    """§8 injection-delta bootstrap primitive — exact reference algorithm, no API."""
+
+    def test_degenerate_ci_is_the_value(self):
+        lo, hi = analyze.delta_bootstrap_ci(np.array([0.16, 0.16, 0.16]))
+        assert lo == pytest.approx(0.16) and hi == pytest.approx(0.16)
+
+    def test_reproduces_reference_algorithm(self):
+        d = np.array([-1.0, 0.0, 1.0, 0.0, 0.5, -0.5])
+        # Hand-mirror the pinned algorithm: default_rng(42), 1000 draws of
+        # rng.choice(d, len(d), replace=True).mean(), percentile [2.5, 97.5].
+        rng = np.random.default_rng(analyze.INJECTION_DELTA_SEED)
+        means = np.array([rng.choice(d, size=len(d), replace=True).mean()
+                          for _ in range(analyze.N_DELTA_BOOTSTRAP)])
+        exp_lo, exp_hi = np.percentile(means, [2.5, 97.5])
+        lo, hi = analyze.delta_bootstrap_ci(d)
+        assert lo == pytest.approx(exp_lo) and hi == pytest.approx(exp_hi)
+
+    def test_deterministic_under_seed(self):
+        d = np.array([0.1, -0.2, 0.3, 0.4, -0.1, 0.0, 0.2])
+        assert analyze.delta_bootstrap_ci(d) == analyze.delta_bootstrap_ci(d)
+
+    def test_empty_is_nan(self):
+        lo, hi = analyze.delta_bootstrap_ci(np.array([]))
+        assert np.isnan(lo) and np.isnan(hi)
+
+
 def _cl_fixture(cond_acc_tok: dict[str, tuple[list[float], list[float]]],
                 s0prime_c2: tuple[list[float], list[float]] | None = None) -> pd.DataFrame:
     """Build a case_level frame directly: 4 cases per condition, phase per
@@ -180,7 +207,7 @@ class TestBuildAnalysis:
     def test_tables_and_hand_values(self):
         tables = analyze.build_analysis(_tiny_scored())
         assert set(tables) == {"case_level", "headline_contrasts", "supplementary_contrasts",
-                               "injection_cells", "falsification"}
+                               "injection_cells", "injection_deltas", "falsification"}
         fal = tables["falsification"].set_index("criterion")
         assert list(fal.index) == ["intermediate_optimum_RQ1", "orchestration_benefit_RQ2",
                                    "prompt_budget_confound_RQ3"]
@@ -207,6 +234,15 @@ class TestBuildAnalysis:
         assert ic["substitution_success_rate"] == pytest.approx(0.5)
         assert ic["token_cost_penalty_vs_baseline"] == pytest.approx(48.5)
         assert ic["all_case_accuracy"] == pytest.approx(0.0)
+        # record_substituted absent from the fixture → NaN (hallucination-only
+        # column, not applicable / None elsewhere).
+        assert np.isnan(ic["record_substituted_rate"])
+
+        # injection delta: hallucination-C1 injected acc all 0 minus phase-1 C1
+        # baseline case means [1,1,0,1] → deltas [-1,-1,0,-1], mean −0.75, n=4.
+        idl = tables["injection_deltas"].set_index(["mode", "condition"])
+        assert idl.loc[("hallucination", "C1"), "mean_delta"] == pytest.approx(-0.75)
+        assert idl.loc[("hallucination", "C1"), "n_cases"] == 4
 
         # every headline test carries a Holm-adjusted p and reject flag.
         assert tables["headline_contrasts"]["holm_adjusted"].notna().all()

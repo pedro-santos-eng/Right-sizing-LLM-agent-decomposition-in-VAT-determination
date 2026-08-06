@@ -1,5 +1,70 @@
 # Development Log
 
+## 2026-08-06 — EXPERIMENTAL SPRINT CLOSED: substitution-semantics resolved (two columns), injection-delta table banked, pre-registered timeout prediction confirmed 4/5 & exceeded in C1
+
+Final scoring/analysis commit of the experimental program. Scope: two
+scorer columns, one new analysis table, DEVLOG; no harness/prompt/data
+change (§6.7 provenance: every reported number now comes from a committed
+script).
+
+Pre-registered prediction (recorded BEFORE the Phase-3 timeout re-run):
+the forced-timeout perturbation is absorbed — per-case accuracy deltas vs
+the un-injected Phase-1 baseline straddle zero for every condition.
+Outcome (`results/analysis/injection_deltas.csv`, seed-42 case-clustered
+percentile bootstrap): CONFIRMED in 4/5 cells —
+  S0 −0.020 [−0.110, +0.065], C2 −0.020 [−0.095, +0.045],
+  C3 +0.005 [−0.030, +0.045], C4 +0.005 [−0.050, +0.070],
+all CIs straddling zero (substitution_success 0.965–1.0, availability
+perturbation absorbed) — and EXCEEDED in C1: delta +0.160,
+CI95 [+0.060, +0.270], excludes zero. Descriptive status only: C1 is
+outside the §6.5 pre-specified Holm family, so this is reported as a
+descriptive effect, not a confirmatory rejection.
+
+Mechanism. The post-9f7c298 forced timeout triggers a full-SCOPE redraw
+behind the validation filter (draw again, keep only a validated trace),
+NOT a targeted single-τ repair; the accuracy gain therefore scales with
+the injected worker's scope: C1 (full pipeline in one worker) +0.160 >
+C2/C3 (half-scope) ≈ 0 > C4 (single-subtask) ≈ 0. S0's normal mechanism
+is already a whole-trace redraw, so forcing one changes nothing
+(delta ≈ 0). The token penalty mirrors scope exactly: +21.8k C1,
++4.4–4.6k C2/C3, ≈ 0 C4, and NEGATIVE for S0 (the forced dispatch bills
+nothing, so the redraw runs cheaper than the un-forced baseline path).
+
+Substitution-semantics resolution (ratified). Two columns now, replacing
+the mode-dependent single metric:
+  - `substitution_success` — §6.4-LITERAL for ALL injected modes: the
+    fraction of injected cases reaching a validated trace within budget
+    (terminal_status == ok). Hallucination values as computed:
+    C1 .885 / C2 .900 / C3 .890 / C4 .925 / S0 1.000. S0's 1.000 shows
+    the poisoned record ALWAYS validates there (single worker, no
+    cross-check to reject it). Timeout/outage unchanged (already literal
+    since 9f7c298).
+  - `record_substituted` (hallucination only; None elsewhere) — the
+    pre-9f7c298 metric: did the injected record SURVIVE into the emitted
+    τ slot. Rates C1 .775 / C2 .775 / C3 .780 / C4 .775 / S0 .580 — only
+    this column reveals that at S0 just 58% of poisoned records survive
+    even though 100% of runs validate.
+Per-cell identity holds to machine precision: all_case_accuracy ==
+substitution_success_rate × P(accurate | validated trace), max |diff|
+≈ 1.1e-16. §8 will cite the paired deltas above with these
+case-clustered CIs.
+
+Final dataset: 4400 scored runs = Phase-1 att2 1000 + Phase-2 200 +
+Phase-3 hallucination/outage 2000 + Phase-3 timeout att2 1000 +
+Phase-4 200. Superseded attempts archived under `results/` (not scored):
+Phase-1 att1 (surface v1.2 operand defect) and Phase-3 timeout att1
+(forced-dispatch defect, fixed 9f7c298).
+
+Program cost: ~$132.3 total ($1.26 ph0 + $19.81 + $20.42 + $3.53 +
+$57.30 + $3.59 + $26.25 + ~$0.2 smokes/backfill) — within the >$125
+pre-authorization plus the ratified timeout-arm re-run extension.
+
+Next (out of scope for this commit): paper writing — §7–§9 and §11, plus
+the one-sentence §6.4 D1-A disclosure of the immediate-raise
+forced-timeout semantics — and the harness hardening list (history-aware
+scripted client so a seam that delivers the wrong failure cannot pass the
+gate again).
+
 ## 2026-08-06 — Timeout arm root-caused: forced-timeout seam delivered the wrong failure (task never sent); harness defect, not a design property
 
 Defect: L3 §3.1 requires the worker_timeout seam to "fire once, then

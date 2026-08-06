@@ -135,7 +135,9 @@ class TestTerminalAndMissing:
 
 
 class TestSubstitutionSuccess:
-    def test_hallucination_survived(self, eval_by_id):
+    def _hallucinated(self, eval_by_id):
+        """A CLS-targeted hallucination case whose injected record survives into
+        the emitted trace (so record_substituted is True)."""
         plan = load_plan()
         cls_case = next(
             cid for cid, t in plan["tau_by_case"].items()
@@ -146,12 +148,31 @@ class TestSubstitutionSuccess:
         e["lines"][0]["cls"] = copy.deepcopy(plan["hallucinated_record_by_case"][cls_case])
         marker = {"mode": "hallucination", "tau": "CLS", "fired": True,
                   "plan_sha256": plan["content_sha256"], "details": {}}
-        r = score_record(_raw(cls_case, e, mode="hallucination", injection=marker), PRICE)
+        return cls_case, e, marker
+
+    def test_hallucination_success_is_literal_validated_trace(self, eval_by_id):
+        # §6.4-literal: substitution_success = validated trace within budget
+        # (terminal ok), IDENTICAL to timeout/outage — independent of survival.
+        cls_case, e, marker = self._hallucinated(eval_by_id)
+        r = score_record(_raw(cls_case, e, mode="hallucination", status="ok",
+                              injection=marker), PRICE)
         assert r["substitution_success"] is True
+        # record_substituted is the separate survival column.
+        assert r["record_substituted"] is True
+
+    def test_hallucination_terminal_is_success_failure_but_may_survive(self, eval_by_id):
+        # A poisoned record that survives but whose run never validated:
+        # substitution_success False (no validated trace), record_substituted True.
+        cls_case, e, marker = self._hallucinated(eval_by_id)
+        r = score_record(_raw(cls_case, e, mode="hallucination", status="timeout",
+                              injection=marker), PRICE)
+        assert r["substitution_success"] is False
+        assert r["record_substituted"] is True
 
     def test_none_mode_substitution_na(self, eval_by_id):
         r = score_record(_raw("eval_001", _emitted(eval_by_id["eval_001"])), PRICE)
         assert r["substitution_success"] is None
+        assert r["record_substituted"] is None
 
     # §6.4 for timeout / outage: fraction reaching a validated trace within budget.
     def _injected(self, mode, tau="RCH"):
@@ -162,6 +183,7 @@ class TestSubstitutionSuccess:
         r = score_record(_raw("eval_001", _emitted(case), mode="timeout",
                               status="ok", injection=self._injected("timeout")), PRICE)
         assert r["substitution_success"] is True
+        assert r["record_substituted"] is None  # record-survival is hallucination-only
 
     def test_timeout_exhausted_is_failure(self, eval_by_id):
         r = score_record(_raw("eval_001", None, mode="timeout",
@@ -174,6 +196,7 @@ class TestSubstitutionSuccess:
         r = score_record(_raw("eval_001", _emitted(case), mode="outage",
                               status="ok", injection=self._injected("outage")), PRICE)
         assert r["substitution_success"] is True
+        assert r["record_substituted"] is None  # record-survival is hallucination-only
 
     def test_injected_mode_not_fired_is_na(self, eval_by_id):
         # §6.4 denominator is INJECTED (fired) cases; a non-fired cell is not
