@@ -44,8 +44,10 @@ from src.harness.s0 import S0Knobs, run_s0
 from src.oracle import generator
 
 _DATA_ROOT = Path(__file__).resolve().parents[1]
-# Phase 2/4 supply tuned S0′ knobs here (not executed in this layer). Absent →
-# plain S0 knobs, so the enumeration/dispatch is exercisable without the tuning.
+# Phase 2/4 consume the tuned S0′ knobs versioned here by scripts/tune_s0prime.py
+# (the §6.3 tuning loop). A S0prime_ condition with NO knobs file is a FATAL error,
+# not a silent plain-S0 fallback — that silent fallback let phases 2/4 run
+# degenerate (S0′ == plain S0) undetected (DEVLOG 2026-08-06, "third defect").
 _S0PRIME_KNOBS_DIR = sc.RESULTS_DIR / "s0prime_knobs"
 
 
@@ -70,15 +72,24 @@ def _build_client():
 
 
 def _s0_knobs(condition: str) -> S0Knobs:
+    if not condition.startswith("S0prime_"):
+        return S0Knobs()  # plain S0
     path = _S0PRIME_KNOBS_DIR / f"{condition}.json"
-    if condition.startswith("S0prime_") and path.is_file():
-        d = json.loads(path.read_text(encoding="utf-8"))
-        return S0Knobs(
-            extended_role=d.get("extended_role", ""),
-            exemplars=tuple(d.get("exemplars", ())),
-            scratchpad_instruction=d.get("scratchpad_instruction", ""),
+    if not path.is_file():
+        # Loud-fail (DEVLOG 2026-08-06): the silent plain-S0 fallback that ran
+        # phases 2/4 degenerate is REMOVED. A S0′ control must not execute until
+        # scripts/tune_s0prime.py has committed its tuned, matched-token knobs.
+        raise SystemExit(
+            f"FATAL: tuned S0′ knobs for {condition!r} not found at {path}. Run the "
+            f"§6.3 tuning loop (python -m scripts.tune_s0prime --condition {condition}) "
+            f"and commit results/s0prime_knobs/{condition}.json before this runs."
         )
-    return S0Knobs()  # plain S0 (or S0′ before tuning)
+    d = json.loads(path.read_text(encoding="utf-8"))
+    return S0Knobs(
+        extended_role=d.get("extended_role", ""),
+        exemplars=tuple(d.get("exemplars", ())),
+        scratchpad_instruction=d.get("scratchpad_instruction", ""),
+    )
 
 
 async def _execute(spec: sc.RunSpec, case, client, injection):

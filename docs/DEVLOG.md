@@ -1,5 +1,78 @@
 # Development Log
 
+## 2026-08-06 — THIRD DEFECT: S0′ arms ran degenerate (S0′ == plain S0); §6.3 tuning loop delivered, silent fallback killed, C* ratified
+
+The RQ3 matched-token controls never executed as pre-registered. Phases 2
+(`S0prime_C2`) and 4 (`S0prime_Cstar`) ran with EMPTY knobs — i.e. plain S0 —
+so the "budget-matched S0′" comparison has, until now, been S0-vs-S0.
+
+Evidence (triangulated, from the committed `results/scored.csv`):
+  - Prompt hash. Phases 2/4 recorded S0′'s prompt hash as `9d7ba74f…`, which
+    is EXACTLY `s0_prompt_hash()` for the DEFAULT (empty) `S0Knobs` — the
+    tuned knobs would have changed the assembled prompt and thus the hash.
+  - Tokens. Mean total_tokens: phase-2 `S0prime_C2` 11597.7, phase-4
+    `S0prime_Cstar` 11782.9 — both hugging the plain-S0 phase-1 mean 11899.4
+    and nowhere near their budget targets (14590.085 and 13590.655).
+  - Accuracy. 0.755 (C2 arm) and 0.750 (C* arm) — statistically the S0
+    phase-1 accuracy 0.755, as expected when the agent context is identical.
+
+Three silent layers had to line up for this to ship unnoticed:
+  1. L4 shipped WITHOUT the tuning loop. The L2 header (`s0.py` §6) states
+     plainly: "The tuning LOOP itself is Layer 4; Layer 2 provides the knobs
+     and the measurement." Layer 4 delivered the sweep matrix and the two
+     `S0prime_*` cells but never the loop that fills the knobs — the one
+     deliverable that makes the cells meaningful.
+  2. `run_one._s0_knobs` fell back to plain S0 SILENTLY. Its comment even
+     invited it ("Absent → plain S0 knobs, so the enumeration/dispatch is
+     exercisable without the tuning") — a test convenience that became a
+     production footgun: with no knobs file, phases 2/4 ran and looked
+     healthy.
+  3. The knobs directory was GITIGNORED (`/results/*`). Even had the loop
+     run and written `results/s0prime_knobs/*.json`, the artifact could not
+     propagate to the (fresh-process) phase-2/4 children on another machine —
+     it would never be committed.
+  Process gap: the chained "phases 2 & 4 GO" skipped the §6.3 step that must
+  sit BETWEEN phase-1 scoring (which defines the budget targets) and phase 2.
+  No gate asserted "S0′ knobs exist and are non-plain" before launch.
+
+Consequence. RQ3 / §6.6(3) — "does a budget-matched monolith close the gap to
+the orchestrated pipeline?" — is UNEVALUATED as pre-registered; the two 200-run
+arms are re-designated attempt 1 (degenerate). They are retained, not deleted:
+as an unintended 600-run replication (with phase-1 S0) of S0's none-mode
+stability, they are footnote material (accuracy 0.750–0.755 across three
+independent 200-run draws), not a headline.
+
+C* ratification (DECISION, dated 2026-08-06). C* = argmax mean final-answer
+accuracy over C1–C4, ties broken by LOWEST mean total token cost
+(Pareto-consistent). Applied to the phase-1/mode-none frame: C2 and C3 TIE at
+0.830 accuracy; C3 is cheaper (13590.655 < 14590.085 mean tokens) ⇒ **C* = C3**.
+The rule was fixed AFTER observing the exact tie (disclosed for what it is);
+§7 will state the rule and the tie together. The resolution is versioned to
+`results/s0prime_knobs/Cstar.json` {cstar, rule, basis} so it is never silently
+re-decided.
+
+Fix (this commit; execution deferred to the re-run):
+  - `scripts/tune_s0prime.py` — the §6.3 loop. Computes the budget targets from
+    `scored.csv` (echoes 14590.085 / 13590.655), walks a deterministic knob
+    ladder over the three sanctioned S0Knobs slots (extended role, dev-derived
+    exemplars, scratchpad instruction; exemplars rendered ONLY from
+    dev_001..dev_008 with oracle labels — asserted never to touch an eval case),
+    measures each rung by running S0′ on the 8 dev cases (R=1) through `run_s0`
+    with a TEMP out-root, and greedy-brackets to within ±10 % of target. Writes
+    the tuned `S0prime_*.json` (exact `run_one` schema) + a `tuning_log_*.json`.
+  - `run_one._s0_knobs` — loud-fail: a `S0prime_` condition with no committed
+    knobs now raises `SystemExit`. The silent plain-S0 fallback is REMOVED.
+  - `.gitignore` — the knobs dir is un-ignored (versioned artifact); a tuned
+    `S0prime_C2.json` is now TRACKED (verified with `git check-ignore`).
+  - Tests: ladder determinism, knob IO round-trip against `_s0_knobs`, run_one
+    loud-fail, the C* tie-break (tied frame → C3), and the bracket walk on
+    scripted token counts. `pytest` 247 passed, 2 skipped.
+
+Re-run plan (~$10–12): tune both conditions live → commit the knobs (+ logs +
+Cstar.json) → smoke one `S0prime_C2` child → re-run phases 2 and 4 (attempt 2,
+2×200 runs) → re-score → update §6.6(3)/RQ3. Phases 2/4 attempt-1 archived, not
+scored.
+
 ## 2026-08-06 — EXPERIMENTAL SPRINT CLOSED: substitution-semantics resolved (two columns), injection-delta table banked, pre-registered timeout prediction confirmed 4/5 & exceeded in C1
 
 Final scoring/analysis commit of the experimental program. Scope: two

@@ -9,6 +9,10 @@ __pycache__/
 # and analysis/ are derived data.
 /results/*
 !/results/README.md
+# S0′ tuned knobs are a VERSIONED artifact (DEVLOG 2026-08-06): the tuning loop's
+# output must propagate to the phase-2/4 runners, so track the dir and its files.
+!/results/s0prime_knobs
+!/results/s0prime_knobs/**
 .anthropic_key
 
 # operator scratch — never committed
