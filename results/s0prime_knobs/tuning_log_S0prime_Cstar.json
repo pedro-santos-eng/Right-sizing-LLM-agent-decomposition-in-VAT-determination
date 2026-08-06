@@ -1,0 +1,290 @@
+{
+  "band": [
+    12231.5895,
+    14949.720500000001
+  ],
+  "band_frac": 0.1,
+  "chosen": {
+    "in_band": true,
+    "index": 5,
+    "mean_tokens": 12690.125,
+    "name": "L5_scratch_3ex"
+  },
+  "condition": "S0prime_Cstar",
+  "cstar": "C3",
+  "dev_cases": [
+    "dev_001",
+    "dev_002",
+    "dev_003",
+    "dev_004",
+    "dev_005",
+    "dev_006",
+    "dev_007",
+    "dev_008"
+  ],
+  "iterations": [
+    {
+      "dev_usage": [
+        {
+          "case_id": "dev_001",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 8175
+        },
+        {
+          "case_id": "dev_002",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 7874
+        },
+        {
+          "case_id": "dev_003",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 8357
+        },
+        {
+          "case_id": "dev_004",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 8331
+        },
+        {
+          "case_id": "dev_005",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 8324
+        },
+        {
+          "case_id": "dev_006",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 13059
+        },
+        {
+          "case_id": "dev_007",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 19923
+        },
+        {
+          "case_id": "dev_008",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 17100
+        }
+      ],
+      "iter": 0,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 1,
+        "scratchpad": true
+      },
+      "mean_tokens": 11392.875,
+      "rung_index": 3,
+      "rung_name": "L3_scratch_1ex",
+      "verdict": "below"
+    },
+    {
+      "dev_usage": [
+        {
+          "case_id": "dev_001",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 9474
+        },
+        {
+          "case_id": "dev_002",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 9243
+        },
+        {
+          "case_id": "dev_003",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 9745
+        },
+        {
+          "case_id": "dev_004",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 9441
+        },
+        {
+          "case_id": "dev_005",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 14622
+        },
+        {
+          "case_id": "dev_006",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 9493
+        },
+        {
+          "case_id": "dev_007",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10413
+        },
+        {
+          "case_id": "dev_008",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 11114
+        }
+      ],
+      "iter": 1,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 2,
+        "scratchpad": true
+      },
+      "mean_tokens": 10443.125,
+      "rung_index": 4,
+      "rung_name": "L4_scratch_2ex",
+      "verdict": "below"
+    },
+    {
+      "dev_usage": [
+        {
+          "case_id": "dev_001",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10338
+        },
+        {
+          "case_id": "dev_002",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10660
+        },
+        {
+          "case_id": "dev_003",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10694
+        },
+        {
+          "case_id": "dev_004",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10698
+        },
+        {
+          "case_id": "dev_005",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10976
+        },
+        {
+          "case_id": "dev_006",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 10838
+        },
+        {
+          "case_id": "dev_007",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 24732
+        },
+        {
+          "case_id": "dev_008",
+          "s0_knobs_plain": false,
+          "status": "ok",
+          "total_tokens": 12585
+        }
+      ],
+      "iter": 2,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 3,
+        "scratchpad": true
+      },
+      "mean_tokens": 12690.125,
+      "rung_index": 5,
+      "rung_name": "L5_scratch_3ex",
+      "verdict": "in_band"
+    }
+  ],
+  "ladder": [
+    {
+      "index": 0,
+      "knobs": {
+        "extended_role_chars": 114,
+        "is_plain": false,
+        "n_exemplars": 0,
+        "scratchpad": false
+      },
+      "name": "L0_role_short"
+    },
+    {
+      "index": 1,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 0,
+        "scratchpad": false
+      },
+      "name": "L1_role_long"
+    },
+    {
+      "index": 2,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 0,
+        "scratchpad": true
+      },
+      "name": "L2_role_long_scratch"
+    },
+    {
+      "index": 3,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 1,
+        "scratchpad": true
+      },
+      "name": "L3_scratch_1ex"
+    },
+    {
+      "index": 4,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 2,
+        "scratchpad": true
+      },
+      "name": "L4_scratch_2ex"
+    },
+    {
+      "index": 5,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 3,
+        "scratchpad": true
+      },
+      "name": "L5_scratch_3ex"
+    },
+    {
+      "index": 6,
+      "knobs": {
+        "extended_role_chars": 520,
+        "is_plain": false,
+        "n_exemplars": 4,
+        "scratchpad": true
+      },
+      "name": "L6_scratch_4ex"
+    }
+  ],
+  "start_index": 3,
+  "target_tokens": 13590.655
+}

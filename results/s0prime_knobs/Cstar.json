@@ -1,0 +1,30 @@
+{
+  "basis": {
+    "candidates": {
+      "C1": {
+        "mean_accuracy": 0.72,
+        "mean_tokens": 11316.68,
+        "n": 200
+      },
+      "C2": {
+        "mean_accuracy": 0.83,
+        "mean_tokens": 14590.085,
+        "n": 200
+      },
+      "C3": {
+        "mean_accuracy": 0.83,
+        "mean_tokens": 13590.655,
+        "n": 200
+      },
+      "C4": {
+        "mean_accuracy": 0.77,
+        "mean_tokens": 15845.27,
+        "n": 200
+      }
+    },
+    "frame": "phase 1, mode none",
+    "source": "results/scored.csv"
+  },
+  "cstar": "C3",
+  "rule": "argmax mean final-answer accuracy over C1-C4; ties broken by LOWEST mean total token cost (Pareto-consistent). Fixed 2026-08-06 after observing the exact C2==C3 accuracy tie at 0.830."
+}
