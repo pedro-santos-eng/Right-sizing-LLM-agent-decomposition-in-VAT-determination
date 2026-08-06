@@ -106,12 +106,19 @@ def _quarantine(spec: sc.RunSpec) -> None:
     shutil.move(str(src), str(dst))
 
 
-def _pending_worklist(phase: int) -> tuple[list[sc.RunSpec], int, int]:
+def _pending_worklist(
+    phase: int, modes: Optional[frozenset[str]] = None
+) -> tuple[list[sc.RunSpec], int, int]:
     """Return (worklist, skipped, quarantined): skip complete runs; quarantine a
-    record that exists but does not validate, then include it for re-execution."""
+    record that exists but does not validate, then include it for re-execution.
+    ``modes`` (a subset of the phase's modes; None = all) restricts execution to
+    those cells — the §1 enumeration is unchanged, only the runner's worklist is
+    filtered (e.g. a timeout-only re-run of Phase 3)."""
     worklist: list[sc.RunSpec] = []
     skipped = quarantined = 0
     for spec in sc.enumerate_runs(phase):
+        if modes is not None and spec.mode not in modes:
+            continue
         path = sc.record_path(spec)
         if path.is_file():
             if sc.record_is_complete(spec):
@@ -152,9 +159,10 @@ def run_phase(
     phase: int,
     config: SweepConfig,
     runner=None,
+    modes: Optional[frozenset[str]] = None,
 ) -> PhaseResult:
     runner = runner or SubprocessRunner()
-    worklist, skipped, quarantined = _pending_worklist(phase)
+    worklist, skipped, quarantined = _pending_worklist(phase, modes)
     token_cap = config.token_caps.get(phase)
     dollar_cap = config.dollar_caps.get(phase)
     price = config.price()
@@ -236,13 +244,39 @@ def run_phase(
     )
 
 
+def _parse_modes(phase: int, raw: Optional[str]) -> Optional[frozenset[str]]:
+    """Parse ``--modes`` into a validated subset of the phase's modes, or None
+    (all). Rejects unknown modes and modes not enumerated by the phase, so a
+    typo can never silently run zero cells."""
+    if raw is None:
+        return None
+    requested = [m.strip() for m in raw.split(",") if m.strip()]
+    if not requested:
+        raise SystemExit("--modes given but empty")
+    allowed = set(sc.phase_modes(phase))
+    unknown = [m for m in requested if m not in allowed]
+    if unknown:
+        raise SystemExit(
+            f"--modes {unknown} not in phase {phase} modes {sorted(allowed)}"
+        )
+    return frozenset(requested)
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Layer-4 sweep runner")
     parser.add_argument("--phase", type=int, required=True, choices=sc.PHASES)
     parser.add_argument("--n-parallel", type=int, default=4)
+    parser.add_argument(
+        "--modes", type=str, default=None,
+        help="comma-separated subset of the phase's modes to execute "
+             "(default: all). The §1 enumeration is unchanged; only the "
+             "runner's worklist is filtered — e.g. --modes timeout for a "
+             "timeout-only re-run of Phase 3.",
+    )
     args = parser.parse_args(argv)
+    modes = _parse_modes(args.phase, args.modes)
     config = SweepConfig(n_parallel=args.n_parallel)
-    result = run_phase(args.phase, config)
+    result = run_phase(args.phase, config, modes=modes)
     print(json.dumps(result.__dict__, sort_keys=True))
     return 1 if result.aborted else 0
 

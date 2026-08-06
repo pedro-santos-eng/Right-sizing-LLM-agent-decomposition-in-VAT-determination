@@ -191,6 +191,17 @@ class ModelClient(Protocol):
 #                                    timeout path (§8 timeout test).
 #   - "raise_timeout": True       -> raise asyncio.TimeoutError immediately
 #                                    (deterministic timeout, no real delay).
+#   - "require_in_history": str   -> history-sensitive turn: emit the turn's
+#                                    "text"/"tool_calls" ONLY if some message
+#                                    content contains this substring; otherwise
+#                                    emit "absent_text" (default: a context-less
+#                                    plain end_turn reply, no fenced block). This
+#                                    models the live model's dependence on the
+#                                    initial input-state message being present in
+#                                    the conversation: with only a bare repair
+#                                    message and no task, the real model returns
+#                                    end_turn prose and never a valid bundle
+#                                    (§3.1 timeout path; DEVLOG 2026-08-06).
 # ---------------------------------------------------------------------------
 
 
@@ -233,6 +244,23 @@ class ScriptedClient:
 
         if turn.get("raise_timeout"):
             raise asyncio.TimeoutError(f"scripted timeout for tag {tag!r}")
+        require = turn.get("require_in_history")
+        if require is not None and not any(
+            require in (m.content or "") for m in messages
+        ):
+            # Task context absent from history: mimic the live model replying
+            # with context-less prose (finish_reason end_turn, no fenced block).
+            return ModelResponse(
+                content=turn.get(
+                    "absent_text",
+                    "I don't have the task in front of me — please restate it.",
+                ),
+                tool_calls=(),
+                usage=Usage(input_tokens=0, output_tokens=0),
+                finish_reason=turn.get("absent_finish_reason", "stop"),
+                api_retries=0,
+                latency_ms=0.0,
+            )
         delay = turn.get("delay_s")
         if delay:
             await asyncio.sleep(float(delay))

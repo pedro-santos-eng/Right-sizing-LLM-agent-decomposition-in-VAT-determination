@@ -208,12 +208,22 @@ class Worker:
 
     # -- one invocation (initial or repair) ---------------------------------
 
-    async def run(self, user_text: str) -> WorkerTurn:
+    async def run(self, user_text: str, *, force_timeout: bool = False) -> WorkerTurn:
         """Append ``user_text``, run the tool loop until a final text message,
         and return the extracted payload. Raises asyncio.TimeoutError if any
-        model call exceeds ``timeout_s`` (the orchestrator handles it, §3.2)."""
+        model call exceeds ``timeout_s`` (the orchestrator handles it, §3.2).
+
+        ``force_timeout`` models the §3.6 worker_timeout seam (D1-A): the
+        in-flight model call is cancelled at the FIRST model call — after
+        ``user_text`` is in history but before any assistant turn, and with no
+        usage — which is exactly the state a real 120 s timeout leaves behind.
+        We raise immediately (no real wait, no logged model_calls) so natural
+        repair (§3.1) runs against a conversation that already carries the task,
+        just as every non-injected repair does."""
         self._heal_dangling_tool_calls()
         self.history.append(Message(role="user", content=user_text))
+        if force_timeout:
+            raise asyncio.TimeoutError("forced worker_timeout seam")
         turn_calls: list[ModelCall] = []
         iters = 0
         while True:

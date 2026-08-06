@@ -150,6 +150,58 @@ class TestBudgetAndKill:
         assert result.completed == 0                        # nothing started
 
 
+class TestModesFilter:
+    """--modes restricts the runner's worklist to a subset of the phase's modes
+    (§1 enumeration unchanged) — offline, plan-level, no API, no real child.
+    Asserted on ``_pending_worklist`` (the plan the runner would execute)."""
+
+    def _modes(self, phase, modes, redirect):
+        wl, _, _ = sweep._pending_worklist(phase, modes)
+        return wl
+
+    def test_modes_none_is_full_enumeration(self, redirect_results):
+        wl = self._modes(3, None, redirect_results)
+        assert {s.mode for s in wl} == {"timeout", "hallucination", "outage"}
+        assert len(wl) == sc.phase_run_count(3)
+
+    def test_modes_single_only_that_mode(self, redirect_results):
+        wl = self._modes(3, frozenset({"timeout"}), redirect_results)
+        assert {s.mode for s in wl} == {"timeout"}
+        expected = sum(1 for r in sc.enumerate_runs(3) if r.mode == "timeout")
+        assert len(wl) == expected
+
+    def test_modes_subset(self, redirect_results):
+        wl = self._modes(3, frozenset({"timeout", "outage"}), redirect_results)
+        assert {s.mode for s in wl} == {"timeout", "outage"}
+
+    def test_run_phase_forwards_modes(self, redirect_results, monkeypatch):
+        # run_phase threads --modes straight to _pending_worklist (no execution).
+        seen = {}
+        real = sweep._pending_worklist
+
+        def spy(phase, modes=None):
+            seen["modes"] = modes
+            return [], 0, 0
+
+        monkeypatch.setattr(sweep, "_pending_worklist", spy)
+        sweep.run_phase(3, sweep.SweepConfig(n_parallel=4), runner=_FakeRunner(lambda s: None),
+                        modes=frozenset({"timeout"}))
+        assert seen["modes"] == frozenset({"timeout"})
+        assert real is not spy  # sanity: we patched the real symbol
+
+    def test_parse_modes_validation(self):
+        # None => all (no restriction).
+        assert sweep._parse_modes(3, None) is None
+        # valid subset parses.
+        assert sweep._parse_modes(3, "timeout") == frozenset({"timeout"})
+        assert sweep._parse_modes(3, "timeout,outage") == frozenset({"timeout", "outage"})
+        # a mode not enumerated by the phase is rejected (never silently 0 cells).
+        with pytest.raises(SystemExit):
+            sweep._parse_modes(1, "timeout")   # phase 1 is none-only
+        with pytest.raises(SystemExit):
+            sweep._parse_modes(3, "bogus")
+
+
 class TestSubprocessRoundTrip:
     def test_one_real_child_scripted(self, tmp_path):
         # A genuine `python -m scripts.run_one` subprocess using the scripted

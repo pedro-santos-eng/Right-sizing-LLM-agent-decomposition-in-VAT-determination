@@ -82,6 +82,14 @@ def enumerate_runs(phase: int) -> list[RunSpec]:
     return runs
 
 
+def phase_modes(phase: int) -> tuple[str, ...]:
+    """The injection modes a phase enumerates (§1). Used to validate the
+    ``--modes`` subset restriction without touching the §1 enumeration."""
+    if phase not in _PHASES:
+        raise ValueError(f"unknown phase {phase!r}")
+    return _PHASES[phase]["modes"]
+
+
 def phase_run_count(phase: int) -> int:
     p = _PHASES[phase]
     return len(p["modes"]) * len(p["conditions"]) * len(p["cases"]) * p["repeats"]

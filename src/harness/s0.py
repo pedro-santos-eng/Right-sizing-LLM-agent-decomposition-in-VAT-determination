@@ -248,18 +248,21 @@ async def run_s0(
                     {"seam": tools_mod.SEAM_WORKER_TIMEOUT, "case_id": case_id,
                      "subtask": None, "fired": True, "note": "S0 worker_timeout seam"}
                 )
+            # The trace-generation call ALWAYS goes through worker.run so the
+            # case view reaches history; force_timeout cancels the in-flight
+            # call exactly as a real 120 s timeout would (task delivered, call
+            # lost, no logged model_calls), leaving whole-trace repair (§6) a
+            # conversation that carries the task. (Fix 2026-08-06: the seam used
+            # to short-circuit worker.run, so the view never entered history.)
+            try:
+                turn = await worker.run(user_text, force_timeout=forced_timeout)
+                for c in turn.model_calls:
+                    model_calls.append({"worker_id": S0_WORKER_ID, **c.as_dict()})
+                payload, ext_err = turn.payload, turn.extraction_error
+                timed_out = False
+            except asyncio.TimeoutError:
+                payload, ext_err = None, "payload: S0 invocation timed out"
                 timed_out = True
-                payload, ext_err = None, "payload: S0 invocation timed out (seam)"
-            else:
-                try:
-                    turn = await worker.run(user_text)
-                    for c in turn.model_calls:
-                        model_calls.append({"worker_id": S0_WORKER_ID, **c.as_dict()})
-                    payload, ext_err = turn.payload, turn.extraction_error
-                    timed_out = False
-                except asyncio.TimeoutError:
-                    payload, ext_err = None, "payload: S0 invocation timed out"
-                    timed_out = True
 
             if payload is not None:
                 _apply_s0_interception(payload, case_id, injection, log)

@@ -152,3 +152,35 @@ class TestSubstitutionSuccess:
     def test_none_mode_substitution_na(self, eval_by_id):
         r = score_record(_raw("eval_001", _emitted(eval_by_id["eval_001"])), PRICE)
         assert r["substitution_success"] is None
+
+    # §6.4 for timeout / outage: fraction reaching a validated trace within budget.
+    def _injected(self, mode, tau="RCH"):
+        return {"mode": mode, "tau": tau, "fired": True, "plan_sha256": None, "details": {}}
+
+    def test_timeout_validated_trace_is_success(self, eval_by_id):
+        case = eval_by_id["eval_001"]
+        r = score_record(_raw("eval_001", _emitted(case), mode="timeout",
+                              status="ok", injection=self._injected("timeout")), PRICE)
+        assert r["substitution_success"] is True
+
+    def test_timeout_exhausted_is_failure(self, eval_by_id):
+        r = score_record(_raw("eval_001", None, mode="timeout",
+                              status="validation_exhausted",
+                              injection=self._injected("timeout")), PRICE)
+        assert r["substitution_success"] is False
+
+    def test_outage_validated_trace_is_success(self, eval_by_id):
+        case = eval_by_id["eval_001"]
+        r = score_record(_raw("eval_001", _emitted(case), mode="outage",
+                              status="ok", injection=self._injected("outage")), PRICE)
+        assert r["substitution_success"] is True
+
+    def test_injected_mode_not_fired_is_na(self, eval_by_id):
+        # §6.4 denominator is INJECTED (fired) cases; a non-fired cell is not
+        # applicable (None -> dropped by analyze), not a failure.
+        case = eval_by_id["eval_001"]
+        marker = {"mode": "timeout", "tau": None, "fired": False,
+                  "plan_sha256": None, "details": {}}
+        r = score_record(_raw("eval_001", _emitted(case), mode="timeout",
+                              status="ok", injection=marker), PRICE)
+        assert r["substitution_success"] is None

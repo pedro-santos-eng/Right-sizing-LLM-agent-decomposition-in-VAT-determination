@@ -212,6 +212,55 @@ class TestTimeout:
         seams = [e["seam"] for e in res.run_record["injection_events"]]
         assert tools_mod.SEAM_WORKER_TIMEOUT in seams
 
+    def test_seam_forced_timeout_delivers_bundle_for_natural_repair(self, dataset, emitted_for):
+        """L3 §3.1 contract: a forced timeout fires once, then NATURAL repair
+        recovers. The injected worker's post-timeout state must equal a real
+        120 s timeout — the initial input-state message IS in history (bundle
+        delivered, in-flight call lost), so bare repair feedback recovers just
+        as every other arm does. This is the live-shape repro: the RAT worker is
+        history-sensitive and emits a valid bundle ONLY if the input-state
+        message reached history. RED before the fix — the seam short-circuited
+        worker.run so the bundle never entered history, and history-sensitive
+        repairs return context-less end_turn prose -> validation_exhausted."""
+        case = _multi_line_case(dataset)
+        emitted = emitted_for(case)
+
+        class TimeoutOnce(tools_mod.InjectionController):
+            def __init__(self):
+                self._fired = False
+
+            def worker_timeout(self, case_id, subtask):
+                if subtask == "RAT" and not self._fired:
+                    self._fired = True
+                    return True
+                return False
+
+        rat_turns = [
+            turn(
+                fence(bundle_payload(frozenset({"RAT"}), emitted)),
+                require_in_history="Here is your input state as JSON:",
+            )
+            for _ in range(CFG.subtask_retry_budget)
+        ]
+        res = asyncio.run(
+            run_case("C4", case, make_scripted_client(self._c4_script(emitted, rat_turns)),
+                     config=CFG, injection=TimeoutOnce())
+        )
+        # (a) natural repair recovers to a validated trace.
+        assert res.status == "ok" and res.gate_ok
+        # (b) seam fired (once) with its marker unchanged.
+        seams = [e["seam"] for e in res.run_record["injection_events"]]
+        assert seams.count(tools_mod.SEAM_WORKER_TIMEOUT) == 1
+        # (c) server-smoke record shape: the injected worker logs ZERO model_calls
+        #     for the lost initial dispatch — every logged call is a repair — and
+        #     at least one repair carried the bundle.
+        rat_wid = worker_id("C4", frozenset({"RAT"}))
+        rat_rec = next(w for w in res.run_record["workers"] if w["worker_id"] == rat_wid)
+        rat_calls = [c for c in res.run_record["accounting"]["model_calls"]
+                     if c["worker_id"] == rat_wid]
+        assert rat_rec["retries"] >= 1
+        assert len(rat_calls) == rat_rec["retries"]  # no initial-dispatch call logged
+
 
 # --- §8/§10 C4 concurrency (RAT‖EXM), cap honored; C1-C3 sequential ---------
 

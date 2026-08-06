@@ -20,7 +20,8 @@ Every §6.1 rule implemented here:
   - terminal ⇒ final incorrect + trace-inconsistent, cost/latency counted in full;
   - prompt/completion tokens, tool calls, retries, DERIVED dollars (§5);
   - wall-clock latency;
-  - substitution-success indicator for the hallucination phase.
+  - substitution-success indicator for every injected mode (§6.4): record
+    survival for hallucination; validated-trace-within-budget for timeout/outage.
 """
 
 from __future__ import annotations
@@ -200,7 +201,9 @@ def score_record(raw: dict, price_sheet: dict) -> dict:
         "injection_mode": injection.get("mode", sweep["mode"]),
         "injection_tau": injection.get("tau"),
         "injection_fired": bool(injection.get("fired", False)),
-        "substitution_success": _substitution_success(sweep, injection, emitted, case_id),
+        "substitution_success": _substitution_success(
+            sweep, injection, emitted, case_id, terminal_status
+        ),
     }
     for tau in SUBTASKS:
         ok = bool(step_ok.get(tau, False))
@@ -209,13 +212,38 @@ def score_record(raw: dict, price_sheet: dict) -> dict:
     return row
 
 
-def _substitution_success(sweep, injection, emitted, case_id):
-    """Hallucination phase (§6.4): did the injected record SURVIVE into the
-    emitted trace's τ slot? Not applicable to other modes (None)."""
-    if sweep["mode"] != "hallucination":
+_INJECTED_MODES = frozenset({"hallucination", "timeout", "outage"})
+
+
+def _substitution_success(sweep, injection, emitted, case_id, terminal_status):
+    """§6.4 substitution-success indicator, dispatched by injection mode.
+    The metric is defined over INJECTED cases (§6.4: "fraction of injected
+    cases..."), so the denominator is the fired cells: ``None`` (not applicable,
+    dropped by ``analyze``) for un-injected modes AND for injected modes whose
+    seam did not fire on this case; a bool only when the injection fired.
+
+      - hallucination: did the injected record SURVIVE into the emitted trace's
+        τ slot (record substitution)?
+      - timeout / outage: there is no injected record to survive, so the §6.4
+        analog is the literal "fraction of injected cases reaching a validated
+        trace within budget" — i.e. the case still terminated ``ok`` (a
+        validated trace) despite the fault.
+
+    Hallucination fires on every case (one τ per case, deterministic), so the
+    not-fired→None branch never affects its column."""
+    mode = sweep["mode"]
+    if mode not in _INJECTED_MODES:
         return None
     if not injection.get("fired"):
-        return False
+        return None
+    if mode == "hallucination":
+        return _hallucination_survived(injection, emitted, case_id)
+    # timeout / outage: validated trace reached within the repair budget.
+    return terminal_status == "ok"
+
+
+def _hallucination_survived(injection, emitted, case_id):
+    """Did the hallucinated record survive into the emitted trace's τ slot?"""
     plan = _plan()
     if not plan or not isinstance(emitted, dict):
         return False

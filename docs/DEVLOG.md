@@ -1,5 +1,85 @@
 # Development Log
 
+## 2026-08-06 — Timeout arm root-caused: forced-timeout seam delivered the wrong failure (task never sent); harness defect, not a design property
+
+Defect: L3 §3.1 requires the worker_timeout seam to "fire once, then
+[allow] natural repair mechanisms" — repairs are NEVER re-forced. In
+practice 1000/1000 Phase-3 timeout runs ended `validation_exhausted`
+with zero validated traces (commit 68ec367's "timeout uniformly fatal
+sans fallback" was reporting THIS defect, not a design property).
+
+Root cause (from raw records, $0): the forced-timeout initial dispatch
+short-circuited `worker.run()` entirely (orchestrator `_process_worker`,
+and the mirror in `run_s0`) — it set `payload=None` WITHOUT invoking the
+worker. Because `worker.run()` is the only place the initial
+`_input_state_message` is appended to conversation history, the injected
+worker's conversation NEVER received the task bundle. The natural-repair
+loop then sent only the terse verbatim `_repair_message` ("Your τ output
+failed validation… Re-emit…") into an otherwise-empty conversation with
+no case view, no rules, no instructions. The live model replied with
+context-less prose (finish_reason end_turn, 60-170 output tokens, zero
+tool_use, zero api_retries) and never a fenced bundle → every repair
+failed extraction → validation_exhausted. Evidence: the injected worker
+logs EXACTLY `budget` model_calls (all the repairs; no initial-dispatch
+call) while non-injected workers show the normal initial tool_use call;
+wall-clock 6-19 s confirms no real 120 s wait.
+
+Framing: the seam simulated the WRONG failure — "task never delivered"
+instead of the specified "task delivered, in-flight call lost." A real
+120 s timeout leaves the input message in history (appended before the
+model call that then times out); the scripted seam produced clean/empty
+history instead. The scripted gate missed this because the scripted
+client is history-blind — it pops a valid bundle for any message,
+including a bare repair, so `test_seam_forced_timeout_logged_then_recovers`
+passed against a conversation the live model could not recover from.
+
+Ratifications (this session): D1-A — the forced timeout raises
+immediately in the live path (no real 120 s wait); a one-sentence §6.4
+disclosure of the immediate-raise semantics is a pending PAPER edit, not
+a repo change. D3 — re-run scope is the timeout arm only (~$22-26); the
+fix's behavior changes execute ONLY on the timed-out-invocation path, so
+the none/hallucination/outage arms' banked results remain valid under the
+fixed code.
+
+Rectification: the initial bundle now ALWAYS goes through `worker.run()`;
+a new `force_timeout` flag appends the input-state message to history then
+raises `asyncio.TimeoutError` immediately — leaving exactly the state a
+real timeout would (task in history, zero completed assistant turns, zero
+logged model_calls, no wait). Natural repair then runs against a
+conversation that carries the task, recovering just as every other arm
+already does. The `_repair_message` is byte-identical; no prompt, slice,
+or schema changed (C2/C3 shared slice f01dc266… preserved; all
+prompt-hash tests green). Confined to the `forced` branch of the initial
+dispatch (C1-C4 and S0); none/hallucination/outage paths behaviorally
+unchanged, their tests untouched and green.
+
+Live-shape repro (RED→GREEN): a new history-sensitive scripted behavior
+`require_in_history` emits a valid bundle only if the initial input-state
+message is present in history, else end_turn prose — reproducing the live
+model deterministically. The repro fails before the fix
+(`validation_exhausted != ok`) and passes after; D1-A is codified by a
+worker-level test asserting immediate raise with the task in history and
+no model call.
+
+Scorer: §6.4 `substitution_success` now computed for all injected modes.
+hallucination keeps record-survival (column byte-identical:
+0.775/0.775/0.78/0.775/0.58); timeout/outage use the literal §6.4 form
+(fraction of INJECTED cases reaching a validated trace within budget =
+terminal_status ok), with non-fired cells `None` (not-applicable, dropped
+by analyze) so the denominator is injected cells. Local check on the
+attempt-1 records: outage ≈ 1.0 among-injected (absorbed); timeout 0.0
+(the defect); results/ restored to HEAD after inspection.
+
+Sweep: `--modes` added (comma-separated subset of a phase's modes;
+default = all, §1 enumeration unchanged, only the runner's worklist
+filtered), validated against the phase's modes so a typo can't silently
+run zero cells.
+
+Disposition: the timeout arm is attempt 1, to be archived server-side.
+Re-run plan: timeout-only, ~$22-26, on the fixed code via
+`python -m scripts.sweep --phase 3 --modes timeout`. Pending paper edit:
+the §6.4 one-sentence disclosure of immediate-raise (D1-A) semantics.
+
 ## 2026-08-05 — Phase-1 C2 anomaly root-caused: unspecified operand channel; §3.2 amended (S_RCH += line_items)
 
 Diagnosis (from raw records, $0): RCH's output contract includes

@@ -9,6 +9,7 @@ import copy
 import json
 
 from conftest import fence, turn
+from src.harness import tools as tools_mod
 from src.harness.model_client import make_scripted_client
 from src.harness.orchestrator import RunConfig
 from src.harness.runlog import validate_run_record
@@ -45,6 +46,41 @@ class TestHappyPath:
         # S0 has NO incremental per-record verdicts (§6) — only the whole-trace gate.
         assert rec["validation"]["record_verdicts"] == []
         assert rec["validation"]["final"]["ok"] is True
+
+
+class TestForcedTimeout:
+    """§3.6 worker_timeout seam on the S0 trace-generation call — same D1-A/§3.1
+    contract as C1-C4 (DEVLOG 2026-08-06): the forced timeout delivers the case
+    view to history, cancels the call, and whole-trace repair (§6) recovers. The
+    history-sensitive turn reproduces the live shape: a valid trace is emitted
+    only when the case view is present in history."""
+
+    class _TimeoutOnce(tools_mod.InjectionController):
+        def __init__(self):
+            self._fired = False
+
+        def worker_timeout(self, case_id, subtask):
+            if not self._fired:
+                self._fired = True
+                return True
+            return False
+
+    def test_seam_timeout_delivers_view_then_natural_repair(self, dataset, emitted_for):
+        case = dataset.dev_cases[0]
+        emitted = emitted_for(case)
+        s0_turns = [
+            turn(fence(emitted), 200, 80,
+                 require_in_history="Here is the full case view as JSON:")
+            for _ in range(CFG.constants.s0_trace_repair_budget)
+        ]
+        res = _run(case, {"S0": s0_turns}, injection=self._TimeoutOnce())
+        assert res.status == "ok" and res.gate_ok
+        seams = [e["seam"] for e in res.run_record["injection_events"]]
+        assert seams.count(tools_mod.SEAM_WORKER_TIMEOUT) == 1
+        # Zero model_calls for the lost initial call; every logged call is a repair.
+        rec = res.run_record
+        assert len(rec["accounting"]["model_calls"]) == rec["workers"][0]["retries"]
+        assert rec["workers"][0]["retries"] >= 1
 
 
 class TestWholeTraceRepair:

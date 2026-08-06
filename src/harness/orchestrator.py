@@ -376,11 +376,15 @@ class _Orchestrator:
 
     # -- one worker: initial bundle + per-subtask repair --------------------
 
-    async def _invoke(self, worker: Worker, user_text: str) -> tuple[Optional[dict], Optional[str], bool]:
+    async def _invoke(
+        self, worker: Worker, user_text: str, *, force_timeout: bool = False
+    ) -> tuple[Optional[dict], Optional[str], bool]:
         """Run one worker invocation. Returns (payload, extraction_error,
-        timed_out)."""
+        timed_out). ``force_timeout`` drives the §3.6 seam through the same
+        code as a real timeout: ``user_text`` lands in history, the call raises
+        immediately (D1-A), and no model_calls are logged."""
         try:
-            turn = await worker.run(user_text)
+            turn = await worker.run(user_text, force_timeout=force_timeout)
         except asyncio.TimeoutError:
             return None, "payload: worker invocation timed out", True
         for c in turn.model_calls:
@@ -395,16 +399,21 @@ class _Orchestrator:
         budget = self.config.subtask_retry_budget
 
         # --- initial bundle dispatch --------------------------------------
+        # The initial bundle ALWAYS goes through _invoke so the input-state
+        # message reaches the worker's history. A forced timeout (§3.6 seam)
+        # then cancels the in-flight call exactly as a real 120 s timeout would
+        # — task delivered, call lost — leaving natural repair (§3.1) a
+        # conversation that carries the task. (Fix 2026-08-06: the seam used to
+        # short-circuit _invoke entirely, so the bundle never reached history
+        # and every repair ran on an empty conversation.)
         forced = self._timeout_forced(assigned)
-        if forced is not None:
-            payload, ext_err, timed_out = None, "payload: worker invocation timed out (seam)", True
-        else:
-            for tau in owned_order:
-                self.subtask_state[tau].status = "in_flight"
-                self.subtask_state[tau].attempts += 1
-            payload, ext_err, timed_out = await self._invoke(
-                worker, self._input_state_message(worker.slice)
-            )
+        for tau in owned_order:
+            self.subtask_state[tau].status = "in_flight"
+            self.subtask_state[tau].attempts += 1
+        payload, ext_err, timed_out = await self._invoke(
+            worker, self._input_state_message(worker.slice),
+            force_timeout=forced is not None,
+        )
         wrec["dispatches"] += 1
         if payload is not None and "final" in payload:
             self.final_block = payload.get("final")

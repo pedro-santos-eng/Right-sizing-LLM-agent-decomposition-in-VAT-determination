@@ -346,3 +346,39 @@ class TestToolCap:
         repair_idx = next(i for i, m in enumerate(h)
                           if m.role == "user" and m.content.startswith("repair:"))
         assert cancel_idx < repair_idx
+
+
+class TestForcedTimeoutSeam:
+    """§3.6 worker_timeout seam at the worker level — codifies the D1-A
+    contract (DEVLOG 2026-08-06): the in-flight call is cancelled AFTER the task
+    is in history but BEFORE any model call, with no real wait, so natural
+    repair (§3.1) runs on a conversation that already carries the task."""
+
+    _MARK = "Here is your input state as JSON:"
+
+    def test_force_timeout_raises_with_task_in_history_and_no_model_call(self):
+        # Empty script: were the client consulted, run() would raise
+        # ScriptExhausted — so a clean TimeoutError proves no model call fired.
+        client = make_scripted_client({"w": []})
+        worker = make_worker(slice_for(frozenset({"JUR"})), client, "w", timeout_s=5)
+        with pytest.raises(asyncio.TimeoutError):
+            asyncio.run(worker.run(self._MARK + " {...}", force_timeout=True))
+        # D1-A: no model call, no usage, no real wait ...
+        assert client.calls == []
+        assert worker.model_calls == []
+        # ... yet the task reached history, exactly as a real 120 s timeout does.
+        assert worker.history[-1].role == "user"
+        assert worker.history[-1].content.startswith(self._MARK)
+
+    def test_natural_repair_after_force_timeout_recovers(self):
+        client = make_scripted_client({"w": [turn('ok ```json\n{"jur": {}}\n```')]})
+        worker = make_worker(slice_for(frozenset({"JUR"})), client, "w", timeout_s=5)
+        with pytest.raises(asyncio.TimeoutError):
+            asyncio.run(worker.run(self._MARK + " task", force_timeout=True))
+        # The next run (a bare repair) sees the task in history and succeeds —
+        # no dangling state, no special healing needed.
+        turn_result = asyncio.run(worker.run("repair: re-emit"))
+        assert turn_result.payload == {"jur": {}}
+        users = [m for m in worker.history if m.role == "user"]
+        assert users[0].content.startswith(self._MARK)
+        assert users[1].content.startswith("repair:")
