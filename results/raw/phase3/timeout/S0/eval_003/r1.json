@@ -1,0 +1,137 @@
+{
+  "emitted_trace": null,
+  "plan_sha256": "1b3c3b77d3b799ac6f0c92a8a8f492d7023eda510c534a4474cc1417341fd323",
+  "run_record": {
+    "accounting": {
+      "case_status": "validation_exhausted",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {
+          "forced_subtask": "RCH"
+        },
+        "fired": true,
+        "mode": "timeout",
+        "plan_sha256": "1b3c3b77d3b799ac6f0c92a8a8f492d7023eda510c534a4474cc1417341fd323",
+        "tau": "RCH"
+      },
+      "latency_ms": 6196.735207995516,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2169,
+          "latency_ms": 2660.906719000195,
+          "output_tokens": 171,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2384,
+          "latency_ms": 1855.25076900376,
+          "output_tokens": 168,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2596,
+          "latency_ms": 1680.577719991561,
+          "output_tokens": 122,
+          "worker_id": "S0"
+        }
+      ],
+      "prompt_hashes": {
+        "S0": "9d7ba74fa46456a49dceb43c359abc5a52082d174048be56d82d483e0566150d"
+      },
+      "s0_knobs_plain": true,
+      "token_counts": {
+        "by_worker": {
+          "S0": {
+            "input": 7149,
+            "output": 461
+          }
+        },
+        "input": 7149,
+        "output": 461,
+        "total": 7610
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_003",
+      "condition": "S0",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [
+      {
+        "case_id": "eval_003",
+        "fired": true,
+        "note": "S0 worker_timeout seam",
+        "seam": "worker_timeout",
+        "subtask": null
+      }
+    ],
+    "schema_version": "1",
+    "tool_invocations": [],
+    "validation": {
+      "final": {
+        "failed_checks": [
+          "payload: no fenced json block in final message"
+        ],
+        "ok": false
+      },
+      "record_verdicts": []
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS",
+          "JUR",
+          "RAT",
+          "EXM",
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 3,
+        "retry_verdicts": [],
+        "terminal_status": "validation_exhausted",
+        "worker_id": "S0"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_003",
+    "condition": "S0",
+    "mode": "timeout",
+    "phase": 3,
+    "repeat": 1
+  },
+  "terminal_status": "validation_exhausted",
+  "wall_clock": {
+    "duration_ms": 6200.490492003155,
+    "end_utc": "2026-08-05T15:01:48Z",
+    "start_utc": "2026-08-05T15:01:42Z"
+  }
+}

@@ -1,0 +1,136 @@
+{
+  "emitted_trace": null,
+  "plan_sha256": "1b3c3b77d3b799ac6f0c92a8a8f492d7023eda510c534a4474cc1417341fd323",
+  "run_record": {
+    "accounting": {
+      "case_status": "validation_exhausted",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {
+          "forced_subtask": "RCH"
+        },
+        "fired": true,
+        "mode": "timeout",
+        "plan_sha256": "1b3c3b77d3b799ac6f0c92a8a8f492d7023eda510c534a4474cc1417341fd323",
+        "tau": "RCH"
+      },
+      "latency_ms": 5843.919113991433,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2221,
+          "latency_ms": 2355.8459819905693,
+          "output_tokens": 102,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2370,
+          "latency_ms": 1722.2807420039317,
+          "output_tokens": 82,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 2499,
+          "latency_ms": 1765.792389996932,
+          "output_tokens": 84,
+          "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+        }
+      ],
+      "prompt_hashes": {
+        "C1:CLS+JUR+RAT+EXM+RCH": "c57df552d55512b4b43bac3b9345666a74159f28a144f04e0a261d92f92c2577"
+      },
+      "token_counts": {
+        "by_worker": {
+          "C1:CLS+JUR+RAT+EXM+RCH": {
+            "input": 7090,
+            "output": 268
+          }
+        },
+        "input": 7090,
+        "output": 268,
+        "total": 7358
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_018",
+      "condition": "C1",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [
+      {
+        "case_id": "eval_018",
+        "fired": true,
+        "note": "worker_timeout seam",
+        "seam": "worker_timeout",
+        "subtask": "RCH"
+      }
+    ],
+    "schema_version": "1",
+    "tool_invocations": [],
+    "validation": {
+      "final": {
+        "failed_checks": [
+          "assembly: incomplete trace"
+        ],
+        "ok": false
+      },
+      "record_verdicts": []
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS",
+          "JUR",
+          "RAT",
+          "EXM",
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 3,
+        "retry_verdicts": [],
+        "terminal_status": "validation_exhausted",
+        "worker_id": "C1:CLS+JUR+RAT+EXM+RCH"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_018",
+    "condition": "C1",
+    "mode": "timeout",
+    "phase": 3,
+    "repeat": 1
+  },
+  "terminal_status": "validation_exhausted",
+  "wall_clock": {
+    "duration_ms": 5846.8461529992055,
+    "end_utc": "2026-08-05T15:29:51Z",
+    "start_utc": "2026-08-05T15:29:45Z"
+  }
+}
