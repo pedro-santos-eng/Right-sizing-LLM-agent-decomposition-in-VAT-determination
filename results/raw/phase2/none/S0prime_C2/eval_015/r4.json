@@ -1,0 +1,241 @@
+{
+  "emitted_trace": {
+    "case_id": "eval_015",
+    "final": {
+      "currency": "EUR",
+      "jurisdiction": "IE",
+      "lines": [
+        {
+          "category": "GEN_GOODS",
+          "exempt": false,
+          "liable_party": "customer",
+          "line_id": "L1",
+          "non_charging_reason": "reverse_charge",
+          "outcome": "reverse_charge",
+          "rate": 0.23,
+          "rate_band": "standard",
+          "reverse_charge": true,
+          "vat_amount": 0.0
+        }
+      ],
+      "total_vat_amount": 0.0
+    },
+    "jur": {
+      "decision": {
+        "jur_path": "intra_community_b2b",
+        "jurisdiction": "IE"
+      },
+      "rule_reference": "JUR.INTRA_EU_B2B",
+      "subtask": "JUR",
+      "support": {
+        "customer_country": "IE",
+        "customer_vat_registered": true,
+        "supplier_country": "FR",
+        "transaction_type": "B2B"
+      }
+    },
+    "lines": [
+      {
+        "cls": {
+          "decision": {
+            "category": "GEN_GOODS"
+          },
+          "rule_reference": "CLS.ASSIGNED",
+          "subtask": "CLS",
+          "support": {
+            "description": "synthetic-GEN_GOODS",
+            "line_id": "L1"
+          }
+        },
+        "exm": {
+          "decision": {
+            "exempt": false
+          },
+          "rule_reference": "EXM.NONE",
+          "subtask": "EXM",
+          "support": {
+            "category": "GEN_GOODS"
+          }
+        },
+        "line_id": "L1",
+        "rat": {
+          "decision": {
+            "rate": 0.23,
+            "rate_band": "standard"
+          },
+          "rule_reference": "RATE.STANDARD",
+          "subtask": "RAT",
+          "support": {
+            "category": "GEN_GOODS",
+            "jurisdiction": "IE"
+          }
+        },
+        "rch": {
+          "decision": {
+            "liable_party": "customer",
+            "non_charging_reason": "reverse_charge",
+            "outcome": "reverse_charge",
+            "reverse_charge": true,
+            "vat_amount": 0.0
+          },
+          "rule_reference": "RC.B2B.INTRA_EU",
+          "subtask": "RCH",
+          "support": {
+            "category": "GEN_GOODS",
+            "is_exempt": false,
+            "jur_path": "intra_community_b2b",
+            "line_amount": 3864.0,
+            "rate": 0.23
+          }
+        }
+      }
+    ]
+  },
+  "plan_sha256": null,
+  "run_record": {
+    "accounting": {
+      "case_status": "ok",
+      "execution_constants": {
+        "api_backoff_s": [
+          2,
+          4,
+          8
+        ],
+        "api_transport_retries": 3,
+        "case_wall_cap_s": 1200,
+        "max_tokens": 4096,
+        "model": "claude-haiku-4-5-20251001",
+        "s0_trace_repair_budget": 3,
+        "seed": null,
+        "subtask_retry_budget": 3,
+        "temperature": 0.2,
+        "timeout_s": 120,
+        "top_p": null
+      },
+      "injection": {
+        "details": {},
+        "fired": false,
+        "mode": "none",
+        "plan_sha256": null,
+        "tau": null
+      },
+      "latency_ms": 11512.405660992954,
+      "model_calls": [
+        {
+          "api_retries": 0,
+          "finish_reason": "tool_use",
+          "input_tokens": 4387,
+          "latency_ms": 5078.964504995383,
+          "output_tokens": 547,
+          "worker_id": "S0"
+        },
+        {
+          "api_retries": 0,
+          "finish_reason": "end_turn",
+          "input_tokens": 5168,
+          "latency_ms": 6433.441155997571,
+          "output_tokens": 784,
+          "worker_id": "S0"
+        }
+      ],
+      "prompt_hashes": {
+        "S0": "3d56a837d0c56289fa126a06d6da344118213fe2e5777f0b7800a55abf4cff2d"
+      },
+      "s0_knobs_plain": false,
+      "token_counts": {
+        "by_worker": {
+          "S0": {
+            "input": 9555,
+            "output": 1331
+          }
+        },
+        "input": 9555,
+        "output": 1331,
+        "total": 10886
+      }
+    },
+    "envelope": {
+      "written_at_utc": null
+    },
+    "identity": {
+      "case_id": "eval_015",
+      "condition": "S0",
+      "dataset_sha256": "3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e",
+      "oracle_commit": "e2d2bdd22b85ea2915e3d719d7c12c6f18eac577",
+      "repeat": 0
+    },
+    "injection_events": [],
+    "schema_version": "1",
+    "tool_invocations": [
+      {
+        "arguments": {
+          "band": "standard",
+          "jurisdiction": "IE"
+        },
+        "result": {
+          "band": "standard",
+          "jurisdiction": "IE",
+          "rate": 0.23
+        },
+        "tool": "rate_table_lookup"
+      },
+      {
+        "arguments": {
+          "rule_key": "JUR.INTRA_EU_B2B"
+        },
+        "result": {
+          "rule_key": "JUR.INTRA_EU_B2B",
+          "text": "Where the supplier and the customer are established in different member jurisdictions and the customer is a taxable person, the place of supply is the jurisdiction in which the customer is established."
+        },
+        "tool": "rule_citation_retrieval"
+      },
+      {
+        "arguments": {
+          "rule_key": "RC.B2B.INTRA_EU"
+        },
+        "result": {
+          "rule_key": "RC.B2B.INTRA_EU",
+          "text": "On a cross-border business-to-business supply where the customer is a taxable person, liability shifts to the customer under the reverse-charge mechanism and the supplier charges no tax."
+        },
+        "tool": "rule_citation_retrieval"
+      }
+    ],
+    "validation": {
+      "final": {
+        "failed_checks": [],
+        "ok": true
+      },
+      "record_verdicts": []
+    },
+    "workers": [
+      {
+        "assigned": [
+          "CLS",
+          "JUR",
+          "RAT",
+          "EXM",
+          "RCH"
+        ],
+        "dispatches": 1,
+        "retries": 0,
+        "retry_verdicts": [],
+        "terminal_status": "ok",
+        "worker_id": "S0"
+      }
+    ]
+  },
+  "schema_version": "L4-1",
+  "sweep": {
+    "case_id": "eval_015",
+    "condition": "S0prime_C2",
+    "mode": "none",
+    "phase": 2,
+    "repeat": 4
+  },
+  "terminal_status": "ok",
+  "wall_clock": {
+    "duration_ms": 11515.763442002935,
+    "end_utc": "2026-08-06T16:51:11Z",
+    "start_utc": "2026-08-06T16:50:59Z"
+  }
+}
