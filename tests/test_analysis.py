@@ -8,6 +8,8 @@ tiny fixture.
 
 from __future__ import annotations
 
+import json
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -184,29 +186,41 @@ def _tiny_scored():
     rows = []
     cases = [f"eval_{i:03d}" for i in range(1, 5)]
     acc = {"S0": [0, 0, 0, 1], "C1": [1, 1, 0, 1], "C2": [1, 1, 1, 1], "C4": [1, 0, 0, 1]}
+
+    def _run(**kw):
+        a = kw["final_answer_accuracy"]
+        # main_table/error_types read terminal_status + earliest_failing_subtask:
+        # a failed run is validation_exhausted and fails earliest at JUR here.
+        kw.setdefault("terminal", True)
+        kw.setdefault("terminal_status", "ok" if a else "validation_exhausted")
+        kw.setdefault("earliest_failing_subtask", None if a else "JUR")
+        rows.append(kw)
+
     for cond, a in acc.items():
         for ci, case in enumerate(cases):
             for rep in range(5):
-                rows.append(dict(phase=1, mode="none", condition=cond, case_id=case, repeat=rep,
-                                 final_answer_accuracy=a[ci], total_tokens=100 + ci, latency_ms=10.0,
-                                 trace_consistent=bool(a[ci]), substitution_success=None))
+                _run(phase=1, mode="none", condition=cond, case_id=case, repeat=rep,
+                     final_answer_accuracy=a[ci], total_tokens=100 + ci, latency_ms=10.0,
+                     trace_consistent=bool(a[ci]), substitution_success=None)
     for ci, case in enumerate(cases):
         for rep in range(5):
-            rows.append(dict(phase=2, mode="none", condition=sc.S0PRIME_C2, case_id=case, repeat=rep,
-                             final_answer_accuracy=[1, 1, 0, 1][ci], total_tokens=200, latency_ms=20.0,
-                             trace_consistent=True, substitution_success=None))
+            _run(phase=2, mode="none", condition=sc.S0PRIME_C2, case_id=case, repeat=rep,
+                 final_answer_accuracy=[1, 1, 0, 1][ci], total_tokens=200, latency_ms=20.0,
+                 trace_consistent=True, substitution_success=None)
     for ci, case in enumerate(cases):
         for rep in range(5):
-            rows.append(dict(phase=3, mode="hallucination", condition="C1", case_id=case, repeat=rep,
-                             final_answer_accuracy=0, total_tokens=150, latency_ms=15.0,
-                             trace_consistent=False, substitution_success=(ci % 2 == 0)))
+            _run(phase=3, mode="hallucination", condition="C1", case_id=case, repeat=rep,
+                 final_answer_accuracy=0, total_tokens=150, latency_ms=15.0,
+                 trace_consistent=False, substitution_success=(ci % 2 == 0))
     return pd.DataFrame(rows)
 
 
 class TestBuildAnalysis:
-    def test_tables_and_hand_values(self):
-        tables = analyze.build_analysis(_tiny_scored())
-        assert set(tables) == {"case_level", "headline_contrasts", "supplementary_contrasts",
+    def test_tables_and_hand_values(self, tmp_path):
+        # raw_dir → empty tmp so the s0_family prompt-hash lookup stays hermetic.
+        tables = analyze.build_analysis(_tiny_scored(), raw_dir=tmp_path)
+        assert set(tables) == {"case_level", "main_table", "error_types", "s0_family",
+                               "headline_contrasts", "supplementary_contrasts",
                                "injection_cells", "injection_deltas", "falsification"}
         fal = tables["falsification"].set_index("criterion")
         assert list(fal.index) == ["intermediate_optimum_RQ1", "orchestration_benefit_RQ2",
@@ -247,9 +261,114 @@ class TestBuildAnalysis:
         # every headline test carries a Holm-adjusted p and reject flag.
         assert tables["headline_contrasts"]["holm_adjusted"].notna().all()
 
-    def test_no_tail_percentile_latency(self):
+        # main_table: S0 case accs [0,0,0,1] → 0.25; C2 all 1 → 1.0; C3 absent →
+        # n_cases 0. S0 fails 3/4 cases (×5 reps) → terminal_failure_rate 0.75,
+        # trace_consistent_mean 0.25; latency 10ms → 0.01s.
+        mt = tables["main_table"].set_index("condition")
+        assert mt.loc["S0", "acc_mean"] == pytest.approx(0.25)
+        assert mt.loc["C2", "acc_mean"] == pytest.approx(1.0)
+        assert mt.loc["C3", "n_cases"] == 0
+        assert mt.loc["S0", "terminal_failure_rate"] == pytest.approx(0.75)
+        assert mt.loc["S0", "trace_consistent_mean"] == pytest.approx(0.25)
+        assert mt.loc["S0", "latency_s_median"] == pytest.approx(0.01)
+
+        # error_types: S0 has 3 failing cases ×5 reps = 15 runs, all earliest JUR;
+        # zeros filled for CLS/RAT/EXM/RCH; total = 15.
+        et = tables["error_types"].set_index("condition")
+        assert list(et.columns) == ["CLS", "JUR", "RAT", "EXM", "RCH", "total"]
+        assert et.loc["S0", "JUR"] == 15 and et.loc["S0", "CLS"] == 0
+        assert et.loc["S0", "total"] == 15
+        assert et.loc["C2", "total"] == 0  # C2 never fails
+
+        # s0_family: S0 is the untuned reference (target/in_band n/a); S0prime_C2
+        # tokens 200 vs target 14590.085 → far below band → in_band False; empty
+        # raw_dir → prompt_hash "".
+        sf = tables["s0_family"].set_index("arm")
+        assert list(sf.index) == ["S0", "S0prime_C2", "S0prime_Cstar"]
+        assert sf.loc["S0", "in_band"] is None and np.isnan(sf.loc["S0", "deviation_pct"])
+        assert sf.loc["S0prime_C2", "acc_mean"] == pytest.approx(0.75)
+        assert sf.loc["S0prime_C2", "deviation_pct"] < 0 and sf.loc["S0prime_C2", "in_band"] is False
+        assert (sf["prompt_hash"] == "").all()
+
+    def test_no_tail_percentile_latency(self, tmp_path):
         # §6.1: latency is medians only — no p95/p99 anywhere in the outputs.
-        tables = analyze.build_analysis(_tiny_scored())
+        tables = analyze.build_analysis(_tiny_scored(), raw_dir=tmp_path)
         for df in tables.values():
             cols = " ".join(df.columns).lower()
             assert "p95" not in cols and "p99" not in cols
+
+
+class TestPaperTables:
+    """§7 paper tables — the bootstrap generaliser and per-table structure."""
+
+    def test_bootstrap_stat_ci_matches_delta_engine_for_mean(self):
+        # stat=np.mean must reproduce delta_bootstrap_ci byte-for-byte (same
+        # default_rng(42), same rng.choice stream).
+        d = np.array([-1.0, 0.0, 1.0, 0.0, 0.5, -0.5])
+        assert analyze._bootstrap_stat_ci(d, np.mean) == analyze.delta_bootstrap_ci(d)
+
+    def test_bootstrap_stat_ci_degenerate_and_deterministic(self):
+        lo, hi = analyze._bootstrap_stat_ci(np.array([7.0, 7.0, 7.0]), np.median)
+        assert lo == pytest.approx(7.0) and hi == pytest.approx(7.0)
+        d = np.array([1.0, 4.0, 9.0, 2.0, 5.0])
+        assert analyze._bootstrap_stat_ci(d, np.median) == analyze._bootstrap_stat_ci(d, np.median)
+
+    def test_bootstrap_stat_ci_empty_is_nan(self):
+        lo, hi = analyze._bootstrap_stat_ci(np.array([]), np.mean)
+        assert np.isnan(lo) and np.isnan(hi)
+
+    def test_main_table_structure_and_values(self):
+        mt = analyze.main_table(_tiny_scored()).set_index("condition")
+        assert list(mt.index) == list(analyze.MAIN_TABLE_CONDITIONS)
+        # C4 case accs [1,0,0,1] → mean 0.5; tokens all 103 → mean 103; latency
+        # 10ms → 0.01s; every run ok+consistent for its passing repeats.
+        assert mt.loc["C4", "acc_mean"] == pytest.approx(0.5)
+        # per-case tokens 100,101,102,103 → mean 101.5; CI brackets the mean.
+        assert mt.loc["C4", "total_tokens_mean"] == pytest.approx(101.5)
+        assert (mt.loc["C4", "total_tokens_ci_low"] <= 101.5
+                <= mt.loc["C4", "total_tokens_ci_high"])
+        # constant latency 10ms → median 0.01s and a degenerate (collapsed) CI.
+        assert mt.loc["C4", "latency_s_median"] == pytest.approx(0.01)
+        assert mt.loc["C4", "latency_s_ci_low"] == pytest.approx(0.01)
+        assert mt.loc["C4", "latency_s_ci_high"] == pytest.approx(0.01)
+
+    def test_error_types_zeros_filled_and_totals(self):
+        et = analyze.error_types(_tiny_scored()).set_index("condition")
+        # C1 fails one case (eval_003) ×5 reps, all earliest JUR.
+        assert et.loc["C1", "JUR"] == 5 and et.loc["C1", "total"] == 5
+        # per-row total equals the row's subtask-count sum (zeros filled).
+        for cond in analyze.MAIN_TABLE_CONDITIONS:
+            assert et.loc[cond, "total"] == int(
+                sum(et.loc[cond, s] for s in analyze.ERROR_SUBTASK_ORDER))
+
+    def test_s0_family_deviation_band_and_prompt_hash(self, tmp_path):
+        # A record placed where s0_family looks for S0prime_C2's prompt hash.
+        rec = (tmp_path / "phase2" / "none" / sc.S0PRIME_C2 / "eval_001")
+        rec.mkdir(parents=True)
+        (rec / "r0.json").write_text(json.dumps(
+            {"run_record": {"accounting": {"prompt_hashes": {"S0": "cafef00d"}}}}),
+            encoding="utf-8")
+        sf = analyze.s0_family(_tiny_scored(), raw_dir=tmp_path).set_index("arm")
+        # S0 reference row: no target → deviation NaN, in_band None.
+        assert np.isnan(sf.loc["S0", "target_tokens"]) and sf.loc["S0", "in_band"] is None
+        # S0prime_C2 tokens 200 vs target 14590.085 → deviation ≈ -98.6%, out of band.
+        assert sf.loc["S0prime_C2", "deviation_pct"] == pytest.approx(
+            (200 - 14590.085) / 14590.085 * 100.0)
+        assert sf.loc["S0prime_C2", "in_band"] is False
+        assert sf.loc["S0prime_C2", "prompt_hash"] == "cafef00d"
+        # S0prime_Cstar has no phase-4 rows and no raw record → empty hash, 0 cases.
+        assert sf.loc["S0prime_Cstar", "n_cases"] == 0
+        assert sf.loc["S0prime_Cstar", "prompt_hash"] == ""
+
+    def test_s0_family_in_band_true_at_boundary(self):
+        # Feed S0prime_C2 exactly its target token cost → deviation 0 → in band.
+        rows = []
+        for ci in range(4):
+            for rep in range(5):
+                rows.append(dict(phase=2, mode="none", condition=sc.S0PRIME_C2,
+                                 case_id=f"eval_{ci+1:03d}", repeat=rep,
+                                 final_answer_accuracy=1, total_tokens=14590.085,
+                                 latency_ms=1.0, trace_consistent=True))
+        sf = analyze.s0_family(pd.DataFrame(rows), raw_dir="does_not_exist").set_index("arm")
+        assert sf.loc["S0prime_C2", "deviation_pct"] == pytest.approx(0.0)
+        assert sf.loc["S0prime_C2", "in_band"] is True

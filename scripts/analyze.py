@@ -29,8 +29,9 @@ permutation.
 from __future__ import annotations
 
 import itertools
+import json
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import pandas as pd
@@ -455,11 +456,174 @@ def injection_deltas(scored: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
+# §7 paper tables — main_table, error_types, s0_family. All CIs use the SAME
+# case-clustered percentile bootstrap engine as the §8 injection-delta table
+# (``numpy.default_rng(42)`` per series, 1,000 resamples, percentile
+# [2.5, 97.5]); see ``delta_bootstrap_ci``. ``_bootstrap_stat_ci`` generalises
+# it to an arbitrary summary statistic so the latency column can bootstrap the
+# median while accuracy/tokens bootstrap the mean, all off the identical stream.
+# ---------------------------------------------------------------------------
+
+# The §7 main-sweep conditions, in report order (all phase 1, mode none).
+MAIN_TABLE_CONDITIONS: tuple[str, ...] = ("S0",) + GRANULARITY_ORDER
+
+# earliest_failing_subtask categories, in pipeline order (matches the step_*
+# columns CLS→JUR→RAT→EXM→RCH). Fixed so error_types is zeros-filled and stable.
+ERROR_SUBTASK_ORDER: tuple[str, ...] = ("CLS", "JUR", "RAT", "EXM", "RCH")
+
+# S0-family matched-token specification (§6.7). Each tuned arm targets the
+# phase-1 mean total-token cost of its reference condition; target_tokens are the
+# phase-1 main-sweep points (C2 = 14590.085, C* resolved to C3 = 13590.655). The
+# ±10% band is the preregistered matched-token tolerance. S0 is the untuned
+# reference (no target / band).
+S0_FAMILY_SPEC: tuple[tuple[str, int, str, Optional[float]], ...] = (
+    ("S0", 1, "S0", None),
+    ("S0prime_C2", 2, sc.S0PRIME_C2, 14590.085),
+    ("S0prime_Cstar", 4, sc.S0PRIME_CSTAR, 13590.655),
+)
+S0_FAMILY_BAND_PCT = 10.0
+
+
+def _bootstrap_stat_ci(values: np.ndarray, stat: Callable[[np.ndarray], float],
+                       seed: int = INJECTION_DELTA_SEED,
+                       n: int = N_DELTA_BOOTSTRAP) -> tuple[float, float]:
+    """Case-clustered percentile bootstrap of a summary ``stat`` over a 1-D
+    array, mirroring ``delta_bootstrap_ci`` exactly: one ``default_rng(seed)``
+    per call; ``n`` resamples, each ``rng.choice(values, size=len(values),
+    replace=True)``; CI = ``numpy.percentile`` at [2.5, 97.5] of the ``n``
+    statistics. With ``stat=numpy.mean`` this is byte-identical to
+    ``delta_bootstrap_ci``; ``numpy.median`` gives the latency-median CI."""
+    values = np.asarray(values, dtype=float)
+    if len(values) == 0:
+        return (float("nan"), float("nan"))
+    rng = np.random.default_rng(seed)
+    stats = np.empty(n)
+    for i in range(n):
+        stats[i] = stat(rng.choice(values, size=len(values), replace=True))
+    lo, hi = np.percentile(stats, [2.5, 97.5])
+    return (float(lo), float(hi))
+
+
+def _cond_case_frame(cl: pd.DataFrame, condition: str, phase: int) -> pd.DataFrame:
+    return cl[(cl["condition"] == condition) & (cl["phase"] == phase)
+              & (cl["mode"] == "none")]
+
+
+def main_table(scored: pd.DataFrame) -> pd.DataFrame:
+    """§7 headline table, one row per main-sweep condition (S0, C1–C4; phase 1,
+    mode none). Accuracy and total_tokens report the case-level mean with a 95%
+    case-clustered bootstrap CI; latency reports the median of the per-case
+    median latencies in SECONDS with a bootstrap-of-the-median CI. trace_consistent
+    and terminal_failure are run-level rates."""
+    cl = case_level(scored)
+    rows = []
+    for cond in MAIN_TABLE_CONDITIONS:
+        phase = _CONDITION_PHASE[cond]
+        cc = _cond_case_frame(cl, cond, phase)
+        acc = cc["acc"].to_numpy(dtype=float)
+        tok = cc["tokens"].to_numpy(dtype=float)
+        lat_s = cc["latency_ms"].to_numpy(dtype=float) / 1000.0
+        runs = scored[(scored["condition"] == cond) & (scored["phase"] == phase)
+                      & (scored["mode"] == "none")]
+        acc_lo, acc_hi = _bootstrap_stat_ci(acc, np.mean)
+        tok_lo, tok_hi = _bootstrap_stat_ci(tok, np.mean)
+        lat_lo, lat_hi = _bootstrap_stat_ci(lat_s, np.median)
+        rows.append({
+            "condition": cond,
+            "n_cases": int(len(acc)),
+            "n_runs": int(len(runs)),
+            "acc_mean": float(acc.mean()) if len(acc) else float("nan"),
+            "acc_ci_low": acc_lo, "acc_ci_high": acc_hi,
+            "total_tokens_mean": float(tok.mean()) if len(tok) else float("nan"),
+            "total_tokens_ci_low": tok_lo, "total_tokens_ci_high": tok_hi,
+            "latency_s_median": float(np.median(lat_s)) if len(lat_s) else float("nan"),
+            "latency_s_ci_low": lat_lo, "latency_s_ci_high": lat_hi,
+            "trace_consistent_mean": (float(runs["trace_consistent"].mean())
+                                      if len(runs) else float("nan")),
+            "terminal_failure_rate": (float((runs["terminal_status"] != "ok").mean())
+                                      if len(runs) else float("nan")),
+        })
+    return pd.DataFrame(rows)
+
+
+def error_types(scored: pd.DataFrame) -> pd.DataFrame:
+    """§7 earliest-failure breakdown: counts of ``earliest_failing_subtask`` over
+    the failed runs (final_answer_accuracy == 0) of each main-sweep condition
+    (phase 1, mode none). Every subtask category is a column (zeros filled) and
+    each row carries its own total."""
+    base = scored[(scored["phase"] == 1) & (scored["mode"] == "none")
+                  & (scored["condition"].isin(MAIN_TABLE_CONDITIONS))]
+    fails = base[base["final_answer_accuracy"] == 0]
+    rows = []
+    for cond in MAIN_TABLE_CONDITIONS:
+        col = fails[fails["condition"] == cond]["earliest_failing_subtask"]
+        counts = {s: int((col == s).sum()) for s in ERROR_SUBTASK_ORDER}
+        rows.append({"condition": cond, **counts,
+                     "total": int(sum(counts.values()))})
+    return pd.DataFrame(rows, columns=["condition", *ERROR_SUBTASK_ORDER, "total"])
+
+
+def _one_prompt_hash(condition: str, phase: int, raw_dir: Path) -> str:
+    """The tuned/system prompt SHA-256 for a condition, read from a single raw
+    record's ``run_record.accounting.prompt_hashes`` (§6.7 disclosure). Returns
+    the sole role hash (preferring the ``S0`` role key); "" if unavailable."""
+    base = Path(raw_dir) / f"phase{phase}" / "none" / condition
+    if not base.exists():
+        return ""
+    for rec in sorted(base.glob("*/r*.json")):
+        try:
+            d = json.loads(rec.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        ph = (d.get("run_record", {}).get("accounting", {}) or {}).get("prompt_hashes")
+        if isinstance(ph, dict) and ph:
+            return str(ph.get("S0") or next(iter(ph.values())))
+    return ""
+
+
+def s0_family(scored: pd.DataFrame, raw_dir: Optional[Path] = None) -> pd.DataFrame:
+    """§7 S0-family matched-token table: S0 (phase 1), S0prime_C2 (phase 2), and
+    S0prime_Cstar (phase 4). Reports accuracy mean + 95% bootstrap CI, the mean
+    total-token cost against its matched-token target, the signed deviation %,
+    the in-band verdict (|deviation| ≤ 10%), and the disclosed prompt hash. S0 is
+    the untuned reference (target / deviation / in_band = n/a)."""
+    raw_dir = raw_dir if raw_dir is not None else (sc.RESULTS_DIR / "raw")
+    cl = case_level(scored)
+    rows = []
+    for label, phase, cond, target in S0_FAMILY_SPEC:
+        cc = _cond_case_frame(cl, cond, phase)
+        acc = cc["acc"].to_numpy(dtype=float)
+        tok = cc["tokens"].to_numpy(dtype=float)
+        acc_lo, acc_hi = _bootstrap_stat_ci(acc, np.mean)
+        mean_tok = float(tok.mean()) if len(tok) else float("nan")
+        if target is None:
+            dev, in_band = float("nan"), None
+        else:
+            dev = (mean_tok - target) / target * 100.0
+            in_band = bool(abs(dev) <= S0_FAMILY_BAND_PCT)
+        rows.append({
+            "arm": label,
+            "phase": phase,
+            "condition": cond,
+            "n_cases": int(len(acc)),
+            "acc_mean": float(acc.mean()) if len(acc) else float("nan"),
+            "acc_ci_low": acc_lo, "acc_ci_high": acc_hi,
+            "mean_tokens": mean_tok,
+            "target_tokens": (float(target) if target is not None else float("nan")),
+            "deviation_pct": dev,
+            "in_band": in_band,
+            "prompt_hash": _one_prompt_hash(cond, phase, raw_dir),
+        })
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
 # Top-level analysis assembly.
 # ---------------------------------------------------------------------------
 
 
-def build_analysis(scored: pd.DataFrame) -> dict[str, pd.DataFrame]:
+def build_analysis(scored: pd.DataFrame,
+                   raw_dir: Optional[Path] = None) -> dict[str, pd.DataFrame]:
     cl = case_level(scored)
 
     contrast_rows = []
@@ -489,6 +653,9 @@ def build_analysis(scored: pd.DataFrame) -> dict[str, pd.DataFrame]:
 
     return {
         "case_level": cl,
+        "main_table": main_table(scored),
+        "error_types": error_types(scored),
+        "s0_family": s0_family(scored, raw_dir),
         "headline_contrasts": pd.DataFrame(contrast_rows),
         "supplementary_contrasts": pd.DataFrame(supplementary_rows),
         "injection_cells": injection_cells(scored),

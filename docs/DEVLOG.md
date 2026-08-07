@@ -1,5 +1,64 @@
 # Development Log
 
+## 2026-08-07 — EXPERIMENTAL PROGRAM FINAL CLOSE (RQ1 fired, RQ2 not fired, RQ3 fired); §7 paper tables emitted
+
+The sweep is complete. The final dataset is `results/scored.csv` at 4,400 runs and
+`scripts/analyze.py` now emits every §7/§8 number, including the three headline
+paper tables added this commit (`main_table`, `error_types`, `s0_family`). All
+three reuse the §8 injection-delta bootstrap engine verbatim — `numpy.default_rng(42)`,
+1,000 case-clustered resamples, percentile [2.5, 97.5] — generalised only so the
+latency column bootstraps the median while accuracy/tokens bootstrap the mean.
+
+Final falsification verdicts (`results/analysis/falsification.csv`, §6.6):
+  - **RQ1 — intermediate-optimum: FIRED** (criterion triggered ⇒ hypothesis
+    unsupported for this workload). Neither C2 nor C3 materially outperforms BOTH
+    endpoints C1 and C4 on final-answer accuracy under the ratified materiality
+    rule (bootstrap CI excludes zero positively AND d_z ≥ 0.2): C2>C1 and C3>C1
+    hold, but C2>C4 and C3>C4 do not; the C1–C4 sequence is non-monotonic.
+  - **RQ2 — orchestration benefit: NOT FIRED.** S0 does not weakly Pareto-dominate
+    all of C1–C4 on the (token-cost, accuracy) plane: S0 (0.755, 11899.4) is beaten
+    on accuracy by C2/C3 (0.830) and undercut on tokens by C1 (11316.7). The
+    orchestrated-monolith advantage is therefore not falsified.
+  - **RQ3 — prompt-budget confound: FIRED by the preregistered letter.** The
+    S0'_C2 vs C2 accuracy difference is not significant under the paired
+    permutation test with Holm–Bonferroni correction AND its paired bootstrap CI
+    includes zero — the exact conjunction §6.6(3) requires. Point estimate
+    −0.065 (d_z ≈ −0.20), CI [−0.165, +0.025]. The point DIRECTION favours C2, but
+    per §6.5 this is reported as INCONCLUSIVE, not a null: "any C2 main-sweep
+    advantage is consistent with a prompt-budget explanation." §7 MUST carry the
+    §6.5 inconclusive-not-null framing; do not read the negative point estimate as
+    evidence that C2 beats the budget-matched monolith.
+
+S0-family matched-token check (this is the fix from the 2026-08-06 THIRD-DEFECT
+entry landing on real data). Both tuned arms now resolve to knob rung **L5** and
+assemble the IDENTICAL tuned prompt — prompt hash `3d56a837…` for both
+`S0prime_C2` and `S0prime_Cstar`, distinct from plain S0's `9d7ba74f…` (disclosed:
+the two arms are the same tuned monolith). On the eval set both land IN BAND
+against their targets (±10%): `S0prime_C2` 13230.2 tokens vs target 14590.085 →
+−9.3%; `S0prime_Cstar` 12864.4 vs 13590.655 → −5.3%. Because both arms carry the
+same tuned prompt, **phase 4 is an independent replication** of the S0′ result
+rather than a second tuning target: eval accuracy 0.765 (C2 arm) and 0.760 (C*
+arm) — mutually consistent, and consistent with S0's 0.755. C* remains C3 by the
+2026-08-06 tie-break (C2/C3 tie at 0.830; C3 cheaper).
+
+Final dataset provenance — 4,400 runs = phase 1 (attempt 2) + phase 2 (attempt 2,
+tuned S0′) + phase 3 (hallucination/outage + timeout attempt 2) + phase 4
+(attempt 2). Archived, retained-not-deleted: phase 1 attempt 1, phase 3 timeout
+attempt 1, and the degenerate phase 2/4 attempt 1 (S0′ == plain S0; see the
+2026-08-06 entry). Program cost ≈ $142.
+
+Reference §7 values reproduced by `main_table` (case-level mean acc + 95%
+case-clustered CI; latency = median of per-case median latencies, seconds):
+S0 0.755 [0.665, 0.840] 11.8 s; C1 0.720 [0.625, 0.810] 12.1 s; C2 0.830
+[0.750, 0.910] 15.8 s; C3 0.830 [0.745, 0.915] 16.7 s; C4 0.770 [0.685, 0.855]
+18.4 s. Point estimates match to the reported precision; the seed-42 CIs sit
+within a bootstrap-notch of the earlier reference bounds (C3 lower 0.745 vs an
+earlier 0.735).
+
+Next: paper writing (§7 results, §8 injection, §9 discussion, §11 limitations —
+carrying the §6.5 inconclusive-not-null RQ3 framing and the §6.4 D1-A sentence)
+plus harness hardening. No further sweep runs are planned.
+
 ## 2026-08-06 — THIRD DEFECT: S0′ arms ran degenerate (S0′ == plain S0); §6.3 tuning loop delivered, silent fallback killed, C* ratified
 
 The RQ3 matched-token controls never executed as pre-registered. Phases 2
