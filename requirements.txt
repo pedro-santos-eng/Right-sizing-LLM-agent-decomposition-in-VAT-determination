@@ -1,0 +1,25 @@
+# requirements.txt — analysis / re-analysis pipeline (v1.0.0)
+#
+# Pins are taken from the measurement-server pip freeze (env_server.txt) and
+# cross-checked against the actual Phase-1 measurement environment
+# (results/env_gex44_phase1.txt). Both freezes agree exactly on every package
+# version (they differ only in the editable-install commit hash of this repo).
+#
+# This file is deliberately RESTRICTED to the third-party packages the offline
+# analysis pipeline actually imports (traced from source):
+#   * pandas     — scripts/score_runs.py, scripts/analyze.py
+#   * numpy      — scripts/analyze.py
+#   * jsonschema — src/oracle/validator.py, src/harness/runlog.py
+#                  (loaded by `scripts.freeze_dataset --verify`, the dataset/oracle
+#                   integrity check)
+# The sweep runner (scripts/sweep.py) and its run_one child are stdlib-only for
+# execution; re-running the live experiment additionally needs the anthropic /
+# autogen stack declared in pyproject.toml (see README "Two levels of
+# replicability"). For byte-exact transitive reproduction of the full
+# measurement environment, install from env_server.txt instead.
+#
+# Python: 3.12.3 (measurement host). requires-python for the package is >=3.10.
+
+numpy==2.5.1
+pandas==3.0.5
+jsonschema==4.26.0

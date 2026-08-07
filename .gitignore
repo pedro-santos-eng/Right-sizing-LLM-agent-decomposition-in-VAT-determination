@@ -18,3 +18,35 @@ __pycache__/
 # operator scratch — never committed
 scripts/_*
 src/*.egg-info/
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Editor / OS cruft
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# LaTeX build artifacts (paper sources, if built in-tree)
+*.aux
+*.log
+*.bbl
+*.blg
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Release-preparation process reports — contain UN-redacted audit detail
+# (server IP, committer email). Deliverables for the owner; never publish.
+/SANITIZATION_AUDIT.md
+/PHASE_B_REPORT.md
+/REPRO_GATE_REPORT.md
+/ANON_SNAPSHOT_REPORT.md

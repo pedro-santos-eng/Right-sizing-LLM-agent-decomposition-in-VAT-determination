@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software or dataset, please cite it as below."
+title: "Right-Sizing LLM-Agent Decomposition in VAT Determination: A Pilot Controlled Sweep"
+version: 1.0.0
+date-released: "2026-08-07"
+license: Apache-2.0
+type: software
+# TODO (owner): replace the placeholder author with real name(s) and ORCID.
+authors:
+  - family-names: "AUTHOR"
+    given-names: "AUTHOR"
+    orcid: "TODO"  # e.g. https://orcid.org/0000-0000-0000-0000
+keywords:
+  - "large language models"
+  - "multi-agent systems"
+  - "task decomposition"
+  - "value-added tax"
+  - "controlled evaluation"
+abstract: >-
+  Artifact for a pilot controlled sweep measuring how the granularity of
+  LLM-agent decomposition affects accuracy, token cost, latency, and failure
+  localization on a bounded, synthetic EU-style VAT-determination task. The
+  repository ships a deterministic VAT oracle, a frozen synthetic dataset, the
+  measurement harness, the raw run traces, and the analysis pipeline that
+  regenerates every reported table.

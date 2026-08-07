@@ -1,72 +1,110 @@
-# Right-Sizing LLM Agent Decomposition in VAT Determination
+# Right-Sizing LLM-Agent Decomposition in VAT Determination — A Pilot Controlled Sweep
 
-Deterministic VAT oracle and frozen synthetic dataset — **Part 1** of the artifact
-for the pilot study *"Right-Sizing Agent Decomposition in VAT Determination: A
-Pilot Controlled Sweep"* (in preparation).
+This repository is the complete artifact for a pilot controlled sweep that measures how the
+*granularity* of LLM-agent task decomposition affects final-answer accuracy, token cost,
+latency, and failure localization on a bounded, synthetic EU-style VAT-determination task. It
+ships a deterministic VAT **oracle**, a **frozen synthetic dataset**, the measurement
+**harness** (activity surface → orchestration → fault injection → sweep), the **raw run traces**
+of every one of the 4,400 runs, and the **analysis pipeline** that regenerates every table in
+the paper directly from those traces.
 
-**Status.** Part 1 (oracle + dataset) is complete and frozen at tag
-`part1-frozen`. Part 2 — the multi-agent experiment harness (Layers 1–4:
-activity surface, orchestration, injection, sweep/analysis) — is implemented in
-this repository; Phase 0 (pre-flight gates) is closed. Measured phases (main
-sweep, injection arms, matched-token variants) are pending.
+> The workload is synthetic ground truth built for controlled experimentation (four
+> jurisdictions, a closed category vocabulary, fixed precedence). It does **not** implement any
+> jurisdiction's actual VAT law and is **not** tax advice.
 
-## Contents
+## Directory map
 
 | Path | Purpose |
 | --- | --- |
-| `src/oracle/rules.py` | Bounded EU-style VAT rule set: tables, rule-reference keys, the five subtask resolvers (CLS, JUR, RAT, EXM, RCH), precedence |
-| `src/oracle/generator.py` | Seeded synthetic case generation — stratified, dev/eval disjoint by construction |
-| `src/oracle/labeler.py` | Composes the rules over a case → full oracle trace (final + intermediate labels) |
-| `src/oracle/validator.py` | Structural/consistency checks over any emitted trace |
-| `src/oracle/scorer.py` | Emitted trace vs. oracle labels → accuracy, step accuracy, earliest-error subtask |
-| `src/schemas/final_trace.schema.json` | Single consolidated JSON Schema; per-record types live as `$defs` |
-| `data/` | Frozen dataset: 40 evaluation + 8 development cases, each with its full oracle trace, plus `MANIFEST.json` |
-| `scripts/freeze_dataset.py` | Dataset freeze and integrity verification |
-| `docs/ORACLE_GROUNDING.md` | Source-of-truth specification for everything above |
-| `docs/DEVLOG.md` | Development log, including the freeze record |
-| `tests/` | 27 tests covering determinism, dataset stratification, rules, validation, and scoring |
+| `src/oracle/` | Deterministic VAT oracle: `rules.py` (bounded rule set + the five subtask resolvers CLS·JUR·RAT·EXM·RCH), `generator.py` (seeded, stratified, dev/eval-disjoint case generation), `labeler.py`, `validator.py`, `scorer.py` |
+| `src/harness/` | Experiment harness — Layer 1 activity `surface.py`, Layer 2 `orchestrator.py` + `agents.py` + `model_client.py` + `s0.py`, Layer 3 `injection.py`, plus `tools.py`, `prompts.py`, `runlog.py`, `validation.py` |
+| `src/schemas/`, `src/harness/schemas/` | JSON Schemas for the final trace and the agent case view |
+| `scripts/` | `sweep.py`/`run_one.py` (runner), `score_runs.py` (raw → `scored.csv`), `analyze.py` (`scored.csv` → tables), `freeze_dataset.py` (dataset/oracle integrity), `generate_injection_plan.py`, `tune_s0prime.py`, `sweep_common.py` |
+| `data/` | Frozen dataset: 40 evaluation + 8 development cases with full oracle traces, `MANIFEST.json`, `price_sheet.json`, `injection_plan.json` — **CC-BY-4.0** (`data/LICENSE`) |
+| `results/` | Raw run traces (`raw/phase<N>/<mode>/<condition>/<case>/r<repeat>.json`), the scored table (`scored.csv`), and the paper tables (`analysis/*.csv`); see `results/README.md` — **CC-BY-4.0** |
+| `docs/` | `ORACLE_GROUNDING.md`, the four `HARNESS_GROUNDING_*` specs, `DEVLOG.md` |
+| `tests/` | Determinism, stratification, rules, validation, scoring, and analysis-primitive tests |
 
-## Pinned integrity chain
+**Licensing split.** Code (`src/`, `scripts/`, `tests/`, config) is **Apache-2.0** (top-level
+`LICENSE`). Data and traces (`data/`, `results/`) are **CC-BY-4.0** (`data/LICENSE`). This split
+is intentional and is the authoritative statement of terms.
 
-The dataset is reproducible by construction. The pinned identifiers are:
+## Regenerate every paper table from the committed traces
+
+Everything the paper reports is a deterministic function of the committed raw traces. In a fresh
+environment:
+
+```bash
+python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+
+# THE one command — raw traces -> scored.csv -> every analysis table:
+python -m scripts.score_runs && python -m scripts.analyze
+```
+
+`scripts.score_runs` reads `results/raw/**/r*.json`, scores each run against the oracle, and
+writes `results/scored.csv` (one row per run). `scripts.analyze` reads that CSV and writes the
+paper tables to `results/analysis/`: `main_table.csv`, `error_types.csv`, `s0_family.csv`,
+`headline_contrasts.csv`, `supplementary_contrasts.csv`, `injection_cells.csv`,
+`injection_deltas.csv`, `falsification.csv`, and `case_level.csv`. (PowerShell: replace `&&`
+with `;`.)
+
+This artifact contains **no figure-generation code**; the paper's figures are drawn by hand from
+these numerical tables.
+
+## Frozen integrity chain (oracle + dataset)
+
+The dataset is reproducible by construction from a single seed. Verify it with:
+
+```bash
+python -m scripts.freeze_dataset --verify        # expected: VERIFY OK
+```
+
+which regenerates the dataset from the seed, recomputes both hashes, and compares every frozen
+file byte-for-byte. The pinned identifiers (authoritative copy in `data/MANIFEST.json`):
 
 | Field | Value |
 | --- | --- |
 | Seed | `42` |
-| Oracle commit (`oracle_commit`) | `e2d2bdd22b85ea2915e3d719d7c12c6f18eac577` — tag `part1-frozen` |
+| Oracle commit (`oracle_commit`) | `e2d2bdd22b85ea2915e3d719d7c12c6f18eac577` (tag `part1-frozen`) |
 | `dataset_sha256` (input cases) | `3dc683ec418666fa2e8823a2ea622bfd90f638254377d83fe95d5247563e599e` |
 | `case_files_sha256` (inputs + oracle traces) | `3472544ffcd1434d59427c912ba5c77a8294de0fb675ba7d32f1572c5e410302` |
 | Frozen at (UTC) | `2026-05-29T16:53:24Z` |
 
-The authoritative record is [`data/MANIFEST.json`](data/MANIFEST.json), written by
-the freeze script with `oracle_commit_dirty: false`.
+## Two levels of replicability
 
-## Reproducing the verification
+This artifact separates two distinct claims:
 
-Requirements: Python ≥ 3.12.
+1. **Re-analysis — deterministic and guaranteed by the released traces.** Running
+   `score_runs` + `analyze` over the committed `results/raw/**` reproduces every reported number
+   exactly. It touches no network and calls no model. Determinism is fixed by the pinned
+   `numpy`/`pandas` in `requirements.txt` and the seeds hard-coded in `scripts/analyze.py`
+   (`bootstrap_seed 20260805`, `permutation_seed 20260806`, the §7/§8 case-clustered bootstrap
+   `seed 42`; 1,000 resamples each). This is the reproducibility this repository *guarantees*.
 
-```bash
-pip install -e ".[test]"
+2. **Re-execution — depends on an external model, not guaranteed.** Regenerating the raw traces
+   themselves means re-running the sweep (`python -m scripts.sweep --phase <N>`), which calls the
+   live model **`claude-haiku-4-5-20251001`** through the `anthropic`/`autogen` stack (see
+   `pyproject.toml`). There is **no decoding seed**, so re-execution is *not* bit-reproducible and
+   depends on that pinned model remaining available and behaving consistently. Treat re-execution
+   as an approximate replication, not a deterministic one.
 
-python -m pytest -q                        # expected: 27 passed
-python -m scripts.freeze_dataset --verify  # expected: VERIFY OK
-```
+The full frozen measurement environment (all transitive dependencies) is recorded in
+`env_server.txt` and `results/env_gex44_phase1.txt`; `requirements.txt` is the minimal subset the
+offline analysis pipeline imports.
 
-`--verify` regenerates the full dataset from the manifest's seed, recomputes both
-SHA-256 hashes, compares every frozen file byte-by-byte, and exits non-zero on any
-drift. Run it before using the dataset for anything official: it is the check that
-catches "someone changed `rules.py` and silently broke label reproducibility."
+## Study design in one paragraph
 
-Determinism contract (summary): a single seed fully determines the generated
-cases and all labels; generation uses one explicit seeded RNG, no wall clock, no
-environment-dependent values, and stable JSON serialization, so re-running with
-the same seed is byte-identical. Full statement in
-[`docs/ORACLE_GROUNDING.md`](docs/ORACLE_GROUNDING.md), §6.
+The sweep contrasts a monolithic single-agent baseline (**S0**) against four orchestrated
+decompositions of increasing granularity (**C1–C4**) on 40 evaluation cases with R=5 repeats
+(1,000 main runs), plus two matched-token S0′ variants (2×200) that hold token budget constant to
+separate a decomposition effect from a prompt-budget effect, and a fault-injection battery
+(3,000 runs: timeout, outage, hallucination) — **4,400 runs** total. The pre-registered
+falsification criteria and the exact statistical family are specified in
+`docs/HARNESS_GROUNDING_4_SWEEP.md` and rendered mechanically by `scripts/analyze.py`.
 
-## Scope
+## Requirements
 
-The rule set is a bounded, simplified EU-style VAT model built for controlled
-experimentation: four jurisdictions, a closed category vocabulary, and fixed
-precedence (exempt > reverse charge > standard). It is synthetic ground truth for
-measuring agent behavior — it does not implement any jurisdiction's actual VAT
-law and is not tax advice.
+Python ≥ 3.10 (measured on 3.12.3). For the analysis pipeline: `pip install -r requirements.txt`.
+For re-execution and the test suite, install the package with its extras:
+`pip install -e ".[test,analysis]"`.

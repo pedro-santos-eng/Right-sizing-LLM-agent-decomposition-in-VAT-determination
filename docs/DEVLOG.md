@@ -305,51 +305,45 @@ in full as attempt 2 under v1.2 (~$20; ~$105 projected program total
 vs >$125 credit). Attempt-1 falsification/contrast tables are
 diagnostic only and will not be reported as results.
 
-## 2026-08-04 — Phase 1 AUTHORIZED — main sweep launched on GEX44
+## 2026-08-04 — Phase 1 AUTHORIZED — main sweep launched on the measurement host
 
-Preconditions verified: arrival gate green on GEX44 (210 passed / 2 skipped;
+Preconditions verified: arrival gate green on the measurement host (210 passed / 2 skipped;
 VERIFY OK; part1-frozen -> e2d2bdd); live smokes from the measurement host
 212 passed / 0 skipped; deps fix (29184a9) proven by clean-venv
 `pip install -e ".[test]"`; console credit/spend limit confirmed > $125
 against the $84.12 projection (~40% headroom for retries).
 
 Environment snapshot: results/env_gex44_phase1.txt (pip freeze; Python
-3.12.3, Ubuntu 24.04.4, GEX44). Runner: `python -m scripts.sweep --phase 1`
+3.12.3, Ubuntu 24.04.4, measurement host). Runner: `python -m scripts.sweep --phase 1`
 under tmux; console log at results/phase1_console.log. n-parallel: sweep.py
 default (recorded in the console log), held constant for phases 1-4.
 Phase-0 attempt-2 records remain in results/raw/ per the re-run protocol
 (different phase key; duplicate-guard still a pending follow-up). GO
 recorded with this commit.
 
-## 2026-08-04 — GEX44 arrival closed; Phase-1 host = GEX44
+## 2026-08-04 — Measurement-host arrival closed; Phase-1 host fixed
 
-Server: Hetzner GEX44 #3011859 (FSN1-DC12, 148.251.180.238). Ubuntu
-24.04.4 LTS on 2× 1.92 TB NVMe (RAID1; root on md2). i5-13500 (14C/20T,
-max 4.8 GHz), 64 GB RAM. Access key-only via `gex44_v3` (Keeper:
-"Hetzner GEX44 Server"; root password in the Login record). Note: the
-initial key rotation had landed in the rescue system's RAM filesystem;
-re-applied on-disk via rescue mount — authorized_keys on disk now holds
-the single v3 line.
-
-Repo access from the server: fine-grained PAT `gex44-sweep` (this repo
-only, Contents R/W, expires 2026-09-03; git credential store on the
-server; secret in Keeper).
+Server: dedicated Hetzner bare-metal host (Ubuntu 24.04, i5-13500
+14C/20T, 64 GB, 2×NVMe RAID1). Access was SSH-key-only. [Server ID, IP,
+datacenter, SSH-key name, and repo-access PAT name redacted for public
+release — see SANITIZATION_AUDIT.md. Host credentials and the
+repo-access PAT are held out-of-band and were rotated/revoked at
+release.]
 
 Arrival gate green on the server: pytest → 210 passed, 2 skipped;
 freeze_dataset --verify → VERIFY OK (oracle_commit e2d2bdd…,
 dataset_sha256 3dc683ec…, case_files_sha256 3472544f…); part1-frozen →
-e2d2bdd. Live smokes from the measurement host with ANTHROPIC_API_KEY
-set: 212 passed, 0 skipped (2 live API calls; key file
-`.anthropic_key`, 0600, gitignored).
+e2d2bdd. Live smokes from the measurement host with the API key set:
+212 passed, 0 skipped (2 live API calls; local gitignored key file).
 
 Reproducibility defect caught by the gate: numpy/pandas (Layer-4
 scoring/analysis) and pytest (runner) were undeclared — masked by the
 dev venv. Fixed in this commit: numpy/pandas as runtime dependencies
 (server resolves numpy 2.5.1, pandas 3.0.5 on Python 3.12.3); pytest as
 a [test] extra (9.1.1). Acceptance: clean-venv `pip install -e ".[test]"`
-+ full gate on GEX44, post-push.
++ full gate on the measurement host, post-push.
 
-Decision (VM): Phase-1 host = GEX44. Latency, retry counts, and
+Decision (VM): Phase-1 host = the dedicated measurement host. Latency, retry counts, and
 terminal failures are measured experimental outputs; the dedicated host
 removes laptop-side confounds. Full environment snapshot (pip freeze)
 to be captured at sweep launch.

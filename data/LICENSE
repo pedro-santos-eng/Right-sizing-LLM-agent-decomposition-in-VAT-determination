@@ -1,0 +1,54 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+=========================================================
+
+This LICENSE covers the DATA artifacts of this repository — specifically the
+contents of the `data/` directory (the frozen synthetic dataset and its oracle
+labels/traces, `data/MANIFEST.json`, `data/price_sheet.json`,
+`data/injection_plan.json`) AND the raw run traces and derived tables under the
+`results/` directory (raw records, `scored.csv`, and `analysis/*.csv`).
+
+The SOFTWARE in this repository (everything else — `src/`, `scripts/`, `tests/`,
+build/config files) is licensed separately under the Apache License 2.0; see the
+top-level `LICENSE` file. This split is stated in the repository README.
+
+You are free to:
+
+  * Share — copy and redistribute the material in any medium or format.
+  * Adapt — remix, transform, and build upon the material for any purpose,
+    even commercially.
+
+The licensor cannot revoke these freedoms as long as you follow the license
+terms.
+
+Under the following terms:
+
+  * Attribution — You must give appropriate credit, provide a link to the
+    license, and indicate if changes were made. You may do so in any reasonable
+    manner, but not in any way that suggests the licensor endorses you or your
+    use.
+
+  * No additional restrictions — You may not apply legal terms or technological
+    measures that legally restrict others from doing anything the license
+    permits.
+
+Notices:
+
+  * You do not have to comply with the license for elements of the material in
+    the public domain or where your use is permitted by an applicable exception
+    or limitation.
+
+  * No warranties are given. The license may not give you all of the
+    permissions necessary for your intended use. For example, other rights such
+    as publicity, privacy, or moral rights may limit how you use the material.
+
+This is a human-readable summary of (and not a substitute for) the license.
+The full legal code of the Creative Commons Attribution 4.0 International
+Public License is available at:
+
+    https://creativecommons.org/licenses/by/4.0/legalcode
+
+By exercising the Licensed Rights (defined in the full legal code), You accept
+and agree to be bound by the terms and conditions of the Creative Commons
+Attribution 4.0 International Public License.
+
+SPDX-License-Identifier: CC-BY-4.0
