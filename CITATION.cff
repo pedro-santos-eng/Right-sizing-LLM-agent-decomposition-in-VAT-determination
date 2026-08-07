@@ -5,11 +5,10 @@ version: 1.0.0
 date-released: "2026-08-07"
 license: Apache-2.0
 type: software
-# TODO (owner): replace the placeholder author with real name(s) and ORCID.
 authors:
-  - family-names: "AUTHOR"
-    given-names: "AUTHOR"
-    orcid: "TODO"  # e.g. https://orcid.org/0000-0000-0000-0000
+  - family-names: "Santos"
+    given-names: "Pedro"
+    orcid: "https://orcid.org/0009-0007-3191-9617"
 keywords:
   - "large language models"
   - "multi-agent systems"
