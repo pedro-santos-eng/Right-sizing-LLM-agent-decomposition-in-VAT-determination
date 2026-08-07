@@ -350,7 +350,7 @@ to be captured at sweep launch.
 
 ## 2026-08-04 — History rewrite: commit-identity hygiene (no content change)
 
-23 of 28 commits carried the work-machine identity (pedrosantos_microsoft)
+23 of 28 commits carried a work-machine identity (since scrubbed)
 and 19 carried Claude Code attribution trailers. Rewrote history with
 `git filter-repo` (mailmap → pedro-santos-eng
 <pedromiguelbsantos@gmail.com>; trailers stripped) and force-pushed.
