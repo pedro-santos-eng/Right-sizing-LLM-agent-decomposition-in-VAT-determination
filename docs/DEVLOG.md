@@ -24,8 +24,9 @@ The DOI is deliberately absent: it does not exist until the GitHub Release fires
 ### Grounding-header wording (tool-agnostic)
 
 `docs/HARNESS_GROUNDING_1_SURFACE.md` and `docs/HARNESS_GROUNDING_2_ORCHESTRATION.md`
-each had one header line changed: "Claude Code reads this before touching" →
-"Implementation tooling reads this before touching". **No semantic change** — the
+each had one header line changed: the previous tool-specific opener ("… reads
+this before touching") was replaced with "Implementation tooling reads this
+before touching". **No semantic change** — the
 authority order, the stop-and-flag rule, and everything below the header are
 byte-for-byte identical. Past DEVLOG entries (including the 2026-08-04
 history-rewrite entry) are records and were left verbatim; only the two living
