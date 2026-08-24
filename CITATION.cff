@@ -3,9 +3,7 @@ message: "If you use this software or dataset, please cite it as below."
 title: "Right-Sizing LLM-Agent Decomposition in VAT Determination: A Pilot Controlled Sweep"
 version: 1.0.0
 date-released: "2026-08-24"
-license:
-  - Apache-2.0
-  - CC-BY-4.0
+license: Apache-2.0
 type: software
 repository-code: "https://github.com/pedro-santos-eng/Right-sizing-LLM-agent-decomposition-in-VAT-determination"
 authors:
