@@ -2,12 +2,17 @@ cff-version: 1.2.0
 message: "If you use this software or dataset, please cite it as below."
 title: "Right-Sizing LLM-Agent Decomposition in VAT Determination: A Pilot Controlled Sweep"
 version: 1.0.0
-date-released: "2026-08-07"
-license: Apache-2.0
+date-released: "2026-08-24"
+license:
+  - Apache-2.0
+  - CC-BY-4.0
 type: software
+repository-code: "https://github.com/pedro-santos-eng/Right-sizing-LLM-agent-decomposition-in-VAT-determination"
 authors:
   - family-names: "Santos"
     given-names: "Pedro"
+    affiliation: "Independent Researcher"
+    email: "pedromiguelbsantos@gmail.com"
     orcid: "https://orcid.org/0009-0007-3191-9617"
 keywords:
   - "large language models"
