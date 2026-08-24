@@ -1,5 +1,7 @@
 # Right-Sizing LLM-Agent Decomposition in VAT Determination — A Pilot Controlled Sweep
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22083282.svg)](https://doi.org/10.5281/zenodo.22083282)
+
 This repository is the complete artifact for a pilot controlled sweep that measures how the
 *granularity* of LLM-agent task decomposition affects final-answer accuracy, token cost,
 latency, and failure localization on a bounded, synthetic EU-style VAT-determination task. It

@@ -45,7 +45,7 @@ remote. Safe because, at the time of the move:
 3. **No Zenodo deposit** references the tag yet.
 
 The tag stays annotated; it now dereferences to the grounding-header commit
-(`5db92a6`). This DEVLOG entry is committed *after* the reposition, so the tagged
+(`aaf5578`). This DEVLOG entry is committed *after* the reposition, so the tagged
 tree is not disturbed.
 
 ### Provenance correction — dangling anonymous-snapshot pointer
