@@ -24,7 +24,7 @@ Decision 1's author check was resolved by a full-paper read the same day
 > and decision scoring remain measured. Ratified by the author under the
 > reopened model-choice decision.
 
-**SOURCE OF TRUTH for Part 2, Layer 2.** Claude Code reads this before touching
+**SOURCE OF TRUTH for Part 2, Layer 2.** Implementation tooling reads this before touching
 any Layer-2 code. Authority order:
 
 > 1. `docs/ORACLE_GROUNDING.md` and the frozen code under `src/oracle/`,

@@ -17,7 +17,7 @@ were ratified on 2026-07-31 (one with an amendment, incorporated below).
 > `vat_amount=0`). Only the §3.2 RCH row changes; no other atom or slice is
 > touched.
 
-**SOURCE OF TRUTH for Part 2, Layer 1.** Claude Code reads this before touching
+**SOURCE OF TRUTH for Part 2, Layer 1.** Implementation tooling reads this before touching
 any harness code. Authority order:
 
 > 1. `docs/ORACLE_GROUNDING.md` and the frozen code under `src/oracle/`,
