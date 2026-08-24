@@ -1,5 +1,60 @@
 # Development Log
 
+## 2026-08-24 — Release metadata: CITATION.cff, tool-agnostic grounding headers, v1.0.0 repositioned
+
+Metadata-only pass ahead of the Zenodo deposit. No re-runs; `results/`, `data/`,
+`src/`, and every hash are untouched. Three files changed, two commits, and the
+`v1.0.0` tag was moved onto the new HEAD.
+
+### CITATION.cff field changes
+
+| Field | Before | After | Why |
+| --- | --- | --- | --- |
+| `authors[0].affiliation` | absent | `Independent Researcher` | Matches the arXiv v1 author block |
+| `authors[0].email` | absent | personal address | Single canonical contact across paper, repo, Zenodo |
+| `license` | `Apache-2.0` | list incl. `CC-BY-4.0` | Repo is dual-licensed; `data/LICENSE` is CC-BY-4.0 |
+| `repository-code` | absent | GitHub URL | Zenodo reads this into the deposit metadata |
+| `date-released` | `2026-08-07` | `2026-08-24` (release date) | Was stale |
+
+Validated with `cffconvert --validate -i CITATION.cff` → valid against schema
+1.2.0. No `.zenodo.json` was created — it would silently override `CITATION.cff`.
+The DOI is deliberately absent: it does not exist until the GitHub Release fires
+(done manually after the Zenodo toggle).
+
+### Grounding-header wording (tool-agnostic)
+
+`docs/HARNESS_GROUNDING_1_SURFACE.md` and `docs/HARNESS_GROUNDING_2_ORCHESTRATION.md`
+each had one header line changed: "Claude Code reads this before touching" →
+"Implementation tooling reads this before touching". **No semantic change** — the
+authority order, the stop-and-flag rule, and everything below the header are
+byte-for-byte identical. Past DEVLOG entries (including the 2026-08-04
+history-rewrite entry) are records and were left verbatim; only the two living
+contract docs get the phrasing change.
+
+### v1.0.0 repositioned onto the new HEAD
+
+The annotated `v1.0.0` tag (message "Artifact for the pilot controlled sweep
+(paper v1)") was deleted and recreated on the new HEAD, then force-updated on the
+remote. Safe because, at the time of the move:
+
+1. **No GitHub Release exists** for `v1.0.0` (verified against the Releases API —
+   empty);
+2. **Software Heritage returned 404** for this origin — nothing archived to
+   dangle;
+3. **No Zenodo deposit** references the tag yet.
+
+The tag stays annotated; it now dereferences to the grounding-header commit
+(`5db92a6`). This DEVLOG entry is committed *after* the reposition, so the tagged
+tree is not disturbed.
+
+### Provenance correction — dangling anonymous-snapshot pointer
+
+The anonymous-snapshot pointer `a60697b` no longer resolves: the earlier
+`git filter-repo` rewrite (see the 2026-08-04 entry) changed every commit SHA in
+the history. The **tree content is unaffected** — only the recorded pointer is
+now dangling. Any external reference to `a60697b` should be treated as historical;
+the current canonical pointer is the `v1.0.0` tag.
+
 ## 2026-08-07 — EXPERIMENTAL PROGRAM FINAL CLOSE (RQ1 fired, RQ2 not fired, RQ3 fired); §7 paper tables emitted
 
 The sweep is complete. The final dataset is `results/scored.csv` at 4,400 runs and
